@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{% block title %}KlickCebu{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/theme.css' %}">
+</head>
+<body>
+{% block navbar %}
+<nav class="navbar-kc">
+    <a href="{% url 'accounts:login' %}" class="brand">klick.cebu<span class="brand-sub">CAMERA RENTAL</span></a>
+    <div class="nav-links">
+        {% if request.user.is_authenticated %}
+            <a href="{% url 'dashboard:home' %}">Dashboard</a>
+            <a href="{% url 'accounts:logout' %}">Logout</a>
+        {% else %}
+            <a href="{% url 'accounts:login' %}">Login</a>
+            <a href="{% url 'accounts:register' %}">Register</a>
+        {% endif %}
+    </div>
+</nav>
+{% endblock %}
+{% block content %}{% endblock %}
+</body>
+</html>
