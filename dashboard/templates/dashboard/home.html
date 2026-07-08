@@ -1,16 +1,7 @@
-{% extends 'base.html' %}
+{% extends 'app_base.html' %}
 {% block title %}Dashboard - KlickCebu{% endblock %}
-{% block navbar %}
-<nav class="navbar-kc dash-nav">
-    <a href="{% url 'dashboard:home' %}" class="brand">klick.cebu<span class="brand-sub">ADMIN DASHBOARD</span></a>
-    <div class="nav-links">
-        <span style="margin-right:20px; color:#fff;">Hi, {{ request.user.first_name }}</span>
-        <a href="{% url 'accounts:logout' %}" class="btn-kc-outline" style="color:#fff;border-color:#fff;">Logout</a>
-    </div>
-</nav>
-{% endblock %}
 {% block content %}
-<div class="dash-wrap">
+<div class="content-wrap">
     {% if messages %}
         {% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}
     {% endif %}
@@ -18,18 +9,19 @@
     <h2 class="dash-title">Overview</h2>
     <div class="stat-grid">
         <div class="stat-card"><div class="label">Total Users</div><div class="value">{{ total_users }}</div></div>
-        <div class="stat-card"><div class="label">Cameras Listed</div><div class="value">{{ total_cameras }}</div></div>
+        <div class="stat-card"><div class="label">Equipment Listed</div><div class="value">{{ total_equipment }}</div></div>
+        <div class="stat-card"><div class="label">Categories</div><div class="value">{{ total_categories }}</div></div>
         <div class="stat-card"><div class="label">Total Bookings</div><div class="value">{{ total_bookings }}</div></div>
     </div>
 
     <h2 class="dash-title" style="font-size:20px;">Recently Registered Users</h2>
     <table class="dash-table">
-        <thead><tr><th>Name</th><th>Email</th><th>Date Joined</th></tr></thead>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Date Joined</th></tr></thead>
         <tbody>
             {% for u in recent_users %}
-            <tr><td>{{ u.first_name }} {{ u.last_name }}</td><td>{{ u.email }}</td><td>{{ u.date_joined|date:"M d, Y" }}</td></tr>
+            <tr><td>{{ u.first_name }} {{ u.last_name }}</td><td>{{ u.email }}</td><td>{{ u.get_role_display }}</td><td>{{ u.date_joined|date:"M d, Y" }}</td></tr>
             {% empty %}
-            <tr><td colspan="3">No users yet.</td></tr>
+            <tr><td colspan="4">No users yet.</td></tr>
             {% endfor %}
         </tbody>
     </table>

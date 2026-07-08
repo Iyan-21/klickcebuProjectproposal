@@ -1,0 +1,37 @@
+{% extends 'app_base.html' %}
+{% block title %}Payments - KlickCebu{% endblock %}
+{% block content %}
+<div class="content-wrap">
+    {% if messages %}{% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}{% endif %}
+    <div class="page-header">
+        <h2>Payments</h2>
+        <a href="{% url 'rentals:payment_create' %}" class="btn-kc">+ Record Payment</a>
+    </div>
+    <table class="dash-table">
+        <thead><tr><th>Booking</th><th>Customer</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th><th>Reference #</th><th>Actions</th></tr></thead>
+        <tbody>
+            {% for p in payments %}
+            <tr>
+                <td>#{{ p.booking.pk }} — {{ p.booking.equipment.name }}</td>
+                <td>{{ p.booking.customer.email }}</td>
+                <td>₱{{ p.amount }}</td>
+                <td>{{ p.get_payment_method_display }}</td>
+                <td>
+                    {% if p.payment_status == 'paid' %}<span class="badge-kc green">{{ p.get_payment_status_display }}</span>
+                    {% elif p.payment_status == 'refunded' or p.payment_status == 'failed' %}<span class="badge-kc red">{{ p.get_payment_status_display }}</span>
+                    {% else %}<span class="badge-kc yellow">{{ p.get_payment_status_display }}</span>{% endif %}
+                </td>
+                <td>{{ p.payment_date|default:"—" }}</td>
+                <td>{{ p.reference_no|default:"—" }}</td>
+                <td class="action-row">
+                    <a href="{% url 'rentals:payment_update' p.pk %}" class="btn-kc-sm outline">Edit</a>
+                    <a href="{% url 'rentals:payment_delete' p.pk %}" class="btn-kc-sm danger">Delete</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="empty-state">No payments recorded yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

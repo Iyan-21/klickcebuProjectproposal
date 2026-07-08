@@ -1,0 +1,41 @@
+{% extends 'app_base.html' %}
+{% block title %}Bookings - KlickCebu{% endblock %}
+{% block content %}
+<div class="content-wrap">
+    {% if messages %}{% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}{% endif %}
+    <div class="page-header">
+        <h2>Bookings</h2>
+        <a href="{% url 'rentals:booking_create' %}" class="btn-kc">+ New Booking</a>
+    </div>
+    <table class="dash-table">
+        <thead><tr>
+            {% if request.user.role == 'admin' or request.user.is_superuser %}<th>Customer</th>{% endif %}
+            <th>Equipment</th><th>Start</th><th>End</th><th>Pickup</th><th>Total</th><th>Status</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+            {% for b in bookings %}
+            <tr>
+                {% if request.user.role == 'admin' or request.user.is_superuser %}<td>{{ b.customer.email }}</td>{% endif %}
+                <td>{{ b.equipment.name }}</td>
+                <td>{{ b.start_date }}</td>
+                <td>{{ b.end_date }}</td>
+                <td>{{ b.get_pickup_method_display }}</td>
+                <td>₱{{ b.total_cost }}</td>
+                <td>
+                    {% if b.status == 'confirmed' or b.status == 'completed' %}<span class="badge-kc green">{{ b.get_status_display }}</span>
+                    {% elif b.status == 'cancelled' %}<span class="badge-kc red">{{ b.get_status_display }}</span>
+                    {% elif b.status == 'ongoing' %}<span class="badge-kc blue">{{ b.get_status_display }}</span>
+                    {% else %}<span class="badge-kc yellow">{{ b.get_status_display }}</span>{% endif %}
+                </td>
+                <td class="action-row">
+                    <a href="{% url 'rentals:booking_update' b.pk %}" class="btn-kc-sm outline">Edit</a>
+                    <a href="{% url 'rentals:booking_delete' b.pk %}" class="btn-kc-sm danger">Cancel</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="empty-state">No bookings yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends 'app_base.html' %}
+{% block title %}{{ item.name }} - KlickCebu{% endblock %}
+{% block content %}
+<div class="content-wrap">
+    {% if messages %}{% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}{% endif %}
+    <div class="page-header">
+        <h2>{{ item.name }}</h2>
+        {% if request.user.is_authenticated and request.user.role == 'admin' or request.user.is_superuser %}
+        <div class="action-row">
+            <a href="{% url 'rentals:equipment_update' item.pk %}" class="btn-kc-sm outline">Edit</a>
+            <a href="{% url 'rentals:equipment_delete' item.pk %}" class="btn-kc-sm danger">Delete</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="detail-wrap">
+        <div class="detail-images">
+            {% if item.primary_image %}
+            <img src="{{ item.primary_image.image.url }}" alt="{{ item.name }}">
+            {% else %}
+            <div class="thumb" style="height:280px; border-radius:8px;">No image uploaded</div>
+            {% endif %}
+
+            {% if item.images.all %}
+            <div class="img-thumb-row">
+                {% for img in item.images.all %}
+                <div class="thumb-item">
+                    <img src="{{ img.image.url }}" class="{% if img.is_primary %}primary{% endif %}">
+                    {% if request.user.is_authenticated and request.user.role == 'admin' or request.user.is_superuser %}
+                    <div style="display:flex; gap:4px; margin-top:4px;">
+                        {% if not img.is_primary %}
+                        <form method="post" action="{% url 'rentals:equipment_image_set_primary' item.pk img.pk %}">
+                            {% csrf_token %}<button class="btn-kc-sm outline" style="font-size:10px; padding:2px 6px;">Set Primary</button>
+                        </form>
+                        {% endif %}
+                        <form method="post" action="{% url 'rentals:equipment_image_delete' item.pk img.pk %}">
+                            {% csrf_token %}<button class="btn-kc-sm danger" style="font-size:10px; padding:2px 6px;">✕</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="detail-info">
+            <p class="rate" style="font-size:22px; margin-bottom:12px;">₱{{ item.daily_rate }} / day</p>
+            <div class="cats" style="margin-bottom:16px;">
+                {% for cat in item.categories.all %}<span class="badge-kc gray">{{ cat.name }}</span>{% endfor %}
+                {% if item.is_available %}<span class="badge-kc green">Available</span>{% else %}<span class="badge-kc red">Unavailable</span>{% endif %}
+            </div>
+            <p style="margin-bottom:14px;">{{ item.description|default:"No description." }}</p>
+            <p style="font-size:13px; color:var(--muted); white-space:pre-line;"><strong>Specs:</strong><br>{{ item.specs|default:"—" }}</p>
+            <p style="font-size:13px; color:var(--muted); margin-top:10px;"><strong>Condition:</strong> {{ item.get_condition_display }}</p>
+
+            {% if request.user.is_authenticated %}
+            <a href="{% url 'rentals:booking_create' %}" class="btn-kc" style="margin-top:20px;">Book this item</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'app_base.html' %}
+{% block title %}{{ title }} - KlickCebu{% endblock %}
+{% block content %}
+<div class="content-wrap">
+    <div class="page-header"><h2>{{ title }}</h2></div>
+    <div class="form-card">
+        <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="alert-kc error">{{ form.non_field_errors }}</div>{% endif %}
+            {% for field in form %}
+            <div class="form-group-kc">
+                <label>{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div class="alert-kc error">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <div class="form-actions">
+                <button type="submit" class="btn-kc">Save</button>
+                <a href="{% url 'rentals:payment_list' %}" class="btn-kc-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var bookingSelect = document.querySelector('select[name="booking"]');
+    var amountInput = document.querySelector('input[name="amount"]');
+    if (bookingSelect && amountInput) {
+        bookingSelect.addEventListener('change', function () {
+            var opt = bookingSelect.options[bookingSelect.selectedIndex];
+            var cost = opt.getAttribute('data-cost');
+            if (cost) { amountInput.value = cost; }
+        });
+    }
+});
+</script>
+{% endblock %}

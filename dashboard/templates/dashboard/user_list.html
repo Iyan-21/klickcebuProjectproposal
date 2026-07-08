@@ -1,0 +1,42 @@
+{% extends 'app_base.html' %}
+{% block title %}Users - KlickCebu{% endblock %}
+{% block content %}
+<div class="content-wrap">
+    {% if messages %}{% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}{% endif %}
+    <div class="page-header"><h2>Users <span style="color:var(--muted); font-size:14px; font-weight:400;">(USER entity)</span></h2></div>
+
+    <table class="dash-table">
+        <thead><tr><th>Name</th><th>Email</th><th>Contact #</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td>{{ u.first_name }} {{ u.last_name }}</td>
+                <td>{{ u.email }}</td>
+                <td>{{ u.contact_number|default:"—" }}</td>
+                <td>
+                    <form method="post" action="{% url 'dashboard:user_set_role' u.pk %}" style="display:flex; gap:6px; align-items:center;">
+                        {% csrf_token %}
+                        <select name="role" class="form-control-kc" style="padding:5px 8px; font-size:12px;" onchange="this.form.submit()">
+                            <option value="customer" {% if u.role == 'customer' %}selected{% endif %}>Customer</option>
+                            <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
+                        </select>
+                    </form>
+                </td>
+                <td>
+                    {% if u.is_locked %}<span class="badge-kc red">Locked</span>{% else %}<span class="badge-kc green">Active</span>{% endif %}
+                </td>
+                <td>{{ u.date_joined|date:"M d, Y" }}</td>
+                <td>
+                    <form method="post" action="{% url 'dashboard:user_toggle_lock' u.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-kc-sm {% if not u.is_locked %}danger{% endif %}">{% if u.is_locked %}Unlock{% else %}Lock{% endif %}</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7">No users yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

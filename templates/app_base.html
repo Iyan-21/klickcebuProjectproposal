@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block navbar %}
+<nav class="navbar-kc dash-nav">
+    <a href="{% url 'dashboard:home' %}" class="brand">klick.cebu<span class="brand-sub">CAMERA RENTAL</span></a>
+    <div class="nav-links">
+        <a href="{% url 'dashboard:home' %}" style="color:#fff;">Dashboard</a>
+        <a href="{% url 'rentals:equipment_list' %}" style="color:#fff;">Equipment</a>
+        <a href="{% url 'rentals:booking_list' %}" style="color:#fff;">Bookings</a>
+        {% if request.user.is_authenticated and request.user.role == 'admin' or request.user.is_superuser %}
+        <a href="{% url 'rentals:category_list' %}" style="color:#fff;">Categories</a>
+        <a href="{% url 'rentals:payment_list' %}" style="color:#fff;">Payments</a>
+        <a href="{% url 'dashboard:user_list' %}" style="color:#fff;">Users</a>
+        {% endif %}
+        <span style="margin-left:20px; margin-right:12px; color:#fff;">Hi, {{ request.user.first_name|default:request.user.email }}</span>
+        <a href="{% url 'accounts:logout' %}" class="btn-kc-outline" style="color:#fff;border-color:#fff;">Logout</a>
+    </div>
+</nav>
+{% endblock %}

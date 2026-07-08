@@ -1,0 +1,48 @@
+{% extends 'app_base.html' %}
+{% block title %}Equipment - KlickCebu{% endblock %}
+{% block content %}
+<div class="content-wrap">
+    {% if messages %}{% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}{% endif %}
+    <div class="page-header">
+        <h2>Equipment Catalog</h2>
+        {% if request.user.is_authenticated and request.user.role == 'admin' or request.user.is_superuser %}
+        <a href="{% url 'rentals:equipment_create' %}" class="btn-kc">+ Add Equipment</a>
+        {% endif %}
+    </div>
+
+    <form method="get" class="filter-bar">
+        <input type="text" name="q" placeholder="Search equipment..." value="{{ query }}">
+        <select name="category" onchange="this.form.submit()">
+            <option value="">All Categories</option>
+            {% for c in categories %}
+            <option value="{{ c.pk }}" {% if selected_category == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn-kc-sm">Filter</button>
+    </form>
+
+    <div class="equip-grid">
+        {% for item in equipment_list %}
+        <a href="{% url 'rentals:equipment_detail' item.pk %}" class="equip-card">
+            {% if item.primary_image %}
+            <div class="thumb" style="background-image:url('{{ item.primary_image.image.url }}');"></div>
+            {% else %}
+            <div class="thumb">No image</div>
+            {% endif %}
+            <div class="body">
+                <div class="name">{{ item.name }}</div>
+                <div class="rate">₱{{ item.daily_rate }}/day</div>
+                <div class="cats">
+                    {% for cat in item.categories.all %}
+                    <span class="badge-kc gray">{{ cat.name }}</span>
+                    {% endfor %}
+                    {% if not item.is_available %}<span class="badge-kc red">Unavailable</span>{% endif %}
+                </div>
+            </div>
+        </a>
+        {% empty %}
+        <div class="empty-state">No equipment found.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
