@@ -1,0 +1,161 @@
+{% extends 'app_base.html' %}
+{% block title %}Book a Camera - klick.cebu{% endblock %}
+{% block content %}
+<div class="content-wrap booknow-wrap">
+    <h2 class="dash-title">Book a Camera</h2>
+    <p class="hero-sub booknow-sub">Fill out the form below and we'll confirm your rental.</p>
+
+    {% if messages %}{% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}{% endif %}
+    {% if form.non_field_errors %}<div class="alert-kc error">{{ form.non_field_errors }}</div>{% endif %}
+
+    <form method="post" id="booking-form" class="booknow-grid">
+        {% csrf_token %}
+
+        <div class="booknow-main">
+            <div class="form-card booknow-card">
+                <h3 class="booknow-section-title">Rental Details</h3>
+
+                <div class="form-group-kc">
+                    <label for="id_equipment">Camera *</label>
+                    {{ form.equipment }}
+                    {% if form.equipment.errors %}<div class="alert-kc error">{{ form.equipment.errors }}</div>{% endif %}
+                </div>
+
+                <div class="booknow-dates">
+                    <div class="form-group-kc">
+                        <label for="id_start_date">Start Date *</label>
+                        {{ form.start_date }}
+                    </div>
+                    <div class="form-group-kc">
+                        <label for="id_end_date">End Date *</label>
+                        {{ form.end_date }}
+                    </div>
+                </div>
+                {% if form.start_date.errors or form.end_date.errors %}
+                <div class="alert-kc error">{{ form.start_date.errors }}{{ form.end_date.errors }}</div>
+                {% endif %}
+
+                {% if form.fields.addons.queryset %}
+                <hr class="booknow-divider">
+                <h3 class="booknow-section-title">Add-on Accessories</h3>
+                <div class="addon-list">
+                    {% for item in form.fields.addons.queryset %}
+                    <label class="addon-row">
+                        <span class="addon-check">
+                            <input type="checkbox" name="addons" value="{{ item.pk }}" class="js-addon"
+                                   data-rate="{{ item.daily_rate }}">
+                            {{ item.name }}
+                        </span>
+                        <span class="addon-price">₱{{ item.daily_rate }}/day</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="form-card booknow-card">
+                <h3 class="booknow-section-title">Your Information</h3>
+                <div class="booknow-you">
+                    <div><span class="label">Name</span>{{ request.user.first_name }} {{ request.user.last_name }}</div>
+                    <div><span class="label">Email</span>{{ request.user.email }}</div>
+                    <div><span class="label">Phone</span>{{ request.user.contact_number|default:"Not set on your profile" }}</div>
+                </div>
+                <div class="form-group-kc">
+                    <label for="id_contact_facebook">Facebook</label>
+                    {{ form.contact_facebook }}
+                    <p class="field-hint">Used as a backup contact if we can't reach you.</p>
+                </div>
+                <div class="form-group-kc">
+                    <label for="id_pickup_method">Preferred Pick-up Method</label>
+                    {{ form.pickup_method }}
+                </div>
+            </div>
+
+            <div class="form-card booknow-card">
+                <h3 class="booknow-section-title">Payment Method *</h3>
+                <div class="pay-method-grid">
+                    {% for radio in form.payment_method %}
+                    <label class="pay-method-card">
+                        {{ radio.tag }}
+                        <span>{{ radio.choice_label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% if form.payment_method.errors %}<div class="alert-kc error">{{ form.payment_method.errors }}</div>{% endif %}
+            </div>
+        </div>
+
+        <aside class="booknow-summary">
+            <div class="form-card booknow-card booknow-sticky">
+                <h3 class="booknow-section-title">Estimated Total</h3>
+                <div class="est-row"><span>Camera</span><span id="est-camera-name">—</span></div>
+                <div class="est-row"><span>Rental Days</span><span id="est-days">1</span></div>
+                <div class="est-row"><span>Daily Rate</span><span id="est-rate">—</span></div>
+                <div class="est-row"><span>Camera Subtotal</span><span id="est-camera-subtotal">₱0</span></div>
+                <div class="est-row"><span>Extras</span><span id="est-extras">₱0</span></div>
+                <div class="est-row est-total"><span>Estimated Total</span><span id="est-total">₱0</span></div>
+
+                <div class="est-callout">
+                    <div class="est-row"><span>50% Down Payment</span><span id="est-down">₱0</span></div>
+                    <div class="est-row"><span>Security Deposit</span><span id="est-deposit">₱{{ security_deposit_default }}</span></div>
+                    <p class="field-hint">Down payment required to secure booking. Security deposit refunded upon safe return.</p>
+                </div>
+
+                <button type="submit" class="btn-kc booknow-submit">Submit Booking Request</button>
+            </div>
+        </aside>
+    </form>
+</div>
+
+<script>
+(function () {
+    var equipmentRates = {{ equipment_rates_json|safe }};
+    var addonRates = {{ addon_rates_json|safe }};
+    var equipmentSelect = document.getElementById('id_equipment');
+    var startInput = document.getElementById('id_start_date');
+    var endInput = document.getElementById('id_end_date');
+    var addonChecks = document.querySelectorAll('.js-addon');
+
+    function rentalDays() {
+        if (!startInput.value || !endInput.value) return 1;
+        var start = new Date(startInput.value);
+        var end = new Date(endInput.value);
+        var diff = Math.round((end - start) / 86400000) + 1;
+        return diff > 0 ? diff : 1;
+    }
+
+    function peso(n) {
+        return '₱' + n.toLocaleString('en-PH', { maximumFractionDigits: 2 });
+    }
+
+    function recalc() {
+        var days = rentalDays();
+        var rate = equipmentRates[equipmentSelect.value] ? parseFloat(equipmentRates[equipmentSelect.value]) : 0;
+        var cameraSubtotal = rate * days;
+
+        var extras = 0;
+        addonChecks.forEach(function (cb) {
+            if (cb.checked) extras += parseFloat(cb.dataset.rate) * days;
+        });
+
+        var total = cameraSubtotal + extras;
+        var down = total / 2;
+
+        document.getElementById('est-camera-name').textContent = equipmentSelect.selectedOptions[0] && equipmentSelect.value
+            ? equipmentSelect.selectedOptions[0].text : '—';
+        document.getElementById('est-days').textContent = days;
+        document.getElementById('est-rate').textContent = rate ? peso(rate) : '—';
+        document.getElementById('est-camera-subtotal').textContent = peso(cameraSubtotal);
+        document.getElementById('est-extras').textContent = peso(extras);
+        document.getElementById('est-total').textContent = peso(total);
+        document.getElementById('est-down').textContent = peso(down);
+    }
+
+    equipmentSelect.addEventListener('change', recalc);
+    startInput.addEventListener('change', recalc);
+    endInput.addEventListener('change', recalc);
+    addonChecks.forEach(function (cb) { cb.addEventListener('change', recalc); });
+    recalc();
+})();
+</script>
+{% endblock %}

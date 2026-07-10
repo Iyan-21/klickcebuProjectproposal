@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}klick.cebu — Camera Gear Rental in Cebu{% endblock %}
+
+{% block content %}
+
+<section class="hero-kc">
+  <div class="container-kc hero-kc-inner">
+    <div class="hero-copy">
+      <span class="auth-eyebrow">CEBU'S CAMERA RENTAL</span>
+      <h1>Shoot more.<br>Own less.</h1>
+      <p class="hero-sub">
+        Rent professional cameras, lenses, and lighting from klick.cebu —
+        book online, pick up in the city, and get back to making the shot.
+      </p>
+      <div class="hero-actions">
+        <a href="{% url 'rentals:equipment_list' %}" class="btn-kc">Browse Equipment</a>
+        <a href="{% url 'accounts:register' %}" class="btn-kc-outline">Create an Account</a>
+      </div>
+      <div class="hero-stats">
+        <div><strong>{{ equipment_count }}</strong><span>Items in rotation</span></div>
+        <div><strong>{{ category_count }}</strong><span>Gear categories</span></div>
+        <div><strong>Cebu</strong><span>Local pickup &amp; delivery</span></div>
+      </div>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <div class="lens-ring lens-ring-1"></div>
+      <div class="lens-ring lens-ring-2"></div>
+      <div class="lens-ring lens-ring-3"></div>
+      <div class="lens-glint"></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container-kc">
+    <div class="section-head">
+      <span class="auth-eyebrow">FEATURED GEAR</span>
+      <h2 class="dash-title">Ready to book this week</h2>
+    </div>
+
+    {% if featured_equipment %}
+    <div class="equip-grid">
+      {% for item in featured_equipment %}
+      <a href="{% url 'rentals:equipment_detail' item.pk %}" class="equip-card">
+        <div class="thumb"{% if item.primary_image %} style="background-image:url('{{ item.primary_image.image.url }}')"{% endif %}>
+          {% if not item.primary_image %}No Photo{% endif %}
+        </div>
+        <div class="body">
+          <div class="name">{{ item.name }}</div>
+          <div class="rate">₱{{ item.daily_rate }}<span class="rate-unit">/day</span></div>
+          <div class="cats">
+            {% for cat in item.categories.all|slice:":2" %}
+              <span class="badge-kc gray">{{ cat.name }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">Equipment listings are on their way — check back soon.</div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section section-alt">
+  <div class="container-kc">
+    <div class="section-head">
+      <span class="auth-eyebrow">HOW IT WORKS</span>
+      <h2 class="dash-title">Three steps, then you're shooting</h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <span class="step-num">01</span>
+        <h3>Browse &amp; pick</h3>
+        <p>Filter by category and check availability, specs, and condition for every item.</p>
+      </div>
+      <div class="step-card">
+        <span class="step-num">02</span>
+        <h3>Book your dates</h3>
+        <p>Choose your rental window, pickup or delivery, and how you'd like to pay.</p>
+      </div>
+      <div class="step-card">
+        <span class="step-num">03</span>
+        <h3>Pick up &amp; shoot</h3>
+        <p>Collect your gear in Cebu (or have it delivered) and get back behind the lens.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="container-kc cta-band-inner">
+    <div>
+      <h2>Ready to gear up?</h2>
+      <p>Create a free account to start booking — no deposit required to browse.</p>
+    </div>
+    <div class="hero-actions">
+      <a href="{% url 'accounts:register' %}" class="btn-kc-light">Get Started</a>
+      <a href="{% url 'accounts:login' %}" class="btn-kc-outline-light">Sign In</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer-kc">
+  <div class="container-kc footer-kc-inner">
+    <div>
+      <span class="brand">klick.cebu<span class="brand-sub">CAMERA RENTAL</span></span>
+      <p>Local camera and lighting rentals for Cebu-based creators.</p>
+    </div>
+    <p class="footer-copy">&copy; {% now "Y" %} klick.cebu. All rights reserved.</p>
+  </div>
+</footer>
+
+{% endblock %}

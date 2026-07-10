@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Check Availability — klick.cebu{% endblock %}
+
+{% block content %}
+<section class="section avail-section">
+  <div class="container-kc">
+    <div class="section-head">
+      <span class="auth-eyebrow">PLAN YOUR SHOOT</span>
+      <h1 class="dash-title avail-title">Check Availability</h1>
+      <p class="hero-sub">Select a date to see which cameras and gear are free for rental.</p>
+    </div>
+
+    <div class="avail-legend">
+      <span><i class="avail-dot available"></i> Available</span>
+      <span><i class="avail-dot partial"></i> Partially booked</span>
+      <span><i class="avail-dot full"></i> Fully booked</span>
+    </div>
+
+    <div class="avail-card">
+      <div class="avail-nav">
+        <a href="?year={{ prev_year }}&month={{ prev_month }}" class="avail-nav-btn" aria-label="Previous month">‹</a>
+        <h2>{{ month_label }}</h2>
+        <a href="?year={{ next_year }}&month={{ next_month }}" class="avail-nav-btn" aria-label="Next month">›</a>
+      </div>
+
+      <div class="avail-grid avail-grid-head">
+        {% for label in weekday_labels %}<div>{{ label }}</div>{% endfor %}
+      </div>
+
+      {% for week in weeks %}
+      <div class="avail-grid">
+        {% for day in week %}
+        <a href="?year={{ current_year }}&month={{ current_month }}&date={{ day.date|date:'Y-m-d' }}"
+           class="avail-day status-{{ day.status }}{% if not day.in_month %} other-month{% endif %}{% if day.is_today %} is-today{% endif %}{% if selected_date == day.date %} selected{% endif %}">
+          <span class="avail-day-num">{{ day.date.day }}</span>
+          {% if day.status != 'none' %}<span class="avail-day-dot status-{{ day.status }}"></span>{% endif %}
+        </a>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if total_equipment == 0 %}
+    <div class="empty-state">No equipment listings yet — check back soon.</div>
+    {% elif selected_date %}
+    <div class="avail-detail">
+      <h3>{{ selected_date|date:"l, F j, Y" }}</h3>
+      <div class="avail-detail-cols">
+        <div>
+          <h4>Available ({{ available_items|length }})</h4>
+          {% if available_items %}
+          <div class="avail-badge-list">
+            {% for item in available_items %}
+              <a href="{% url 'rentals:equipment_detail' item.pk %}" class="badge-kc green">{{ item.name }}</a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="avail-empty-note">Nothing free this day.</p>
+          {% endif %}
+        </div>
+        <div>
+          <h4>Booked ({{ booked_items|length }})</h4>
+          {% if booked_items %}
+          <div class="avail-badge-list">
+            {% for item in booked_items %}
+              <span class="badge-kc red">{{ item.name }}</span>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="avail-empty-note">Nothing booked this day.</p>
+          {% endif %}
+        </div>
+      </div>
+      <a href="{% url 'rentals:equipment_list' %}" class="btn-kc avail-cta">Browse Equipment</a>
+    </div>
+    {% else %}
+    <p class="avail-hint">Tap a date above to see exactly what's free.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

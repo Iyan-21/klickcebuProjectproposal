@@ -1,3 +1,5 @@
+import json
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
@@ -181,13 +183,27 @@ def booking_create(request):
             if not admin:
                 booking.status = 'pending'
             booking.save()
+            form.save_m2m()
             messages.success(request, 'Booking created.')
             return redirect('rentals:booking_list')
     else:
         form = BookingForm()
         if not admin:
             form.fields.pop('status')
-    return render(request, 'rentals/booking_form.html', {'form': form, 'title': 'New Booking'})
+
+    if admin:
+        return render(request, 'rentals/booking_form.html', {'form': form, 'title': 'New Booking'})
+
+    equipment_rates = {str(e.pk): str(e.daily_rate) for e in form.fields['equipment'].queryset}
+    addon_rates = {str(e.pk): str(e.daily_rate) for e in form.fields['addons'].queryset}
+    context = {
+        'form': form,
+        'title': 'Book a Camera',
+        'equipment_rates_json': json.dumps(equipment_rates),
+        'addon_rates_json': json.dumps(addon_rates),
+        'security_deposit_default': Booking._meta.get_field('security_deposit').default,
+    }
+    return render(request, 'rentals/book_now.html', context)
 
 
 @login_required

@@ -91,18 +91,36 @@ class Booking(models.Model):
     PAYMENT_METHOD_CHOICES = [
         ('cash', 'Cash'),
         ('gcash', 'GCash'),
+        ('gotyme', 'GoTyme Bank'),
+        ('maribank', 'Maribank'),
         ('bank_transfer', 'Bank Transfer'),
         ('card', 'Card'),
     ]
 
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bookings')
     equipment = models.ForeignKey(Equipment, on_delete=models.CASCADE, related_name='bookings')
+    addons = models.ManyToManyField(
+        Equipment, blank=True, related_name='addon_bookings',
+        help_text="Optional add-on accessories included with this booking."
+    )
+    contact_facebook = models.CharField(
+        max_length=255, blank=True,
+        help_text="Facebook profile URL or name, used as a backup contact method."
+    )
     start_date = models.DateField()
     end_date = models.DateField()
     return_date = models.DateField(null=True, blank=True)
     pickup_method = models.CharField(max_length=20, choices=PICKUP_CHOICES, default='pickup')
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cash')
     total_cost = models.DecimalField(max_digits=10, decimal_places=2)
+    security_deposit = models.DecimalField(
+        max_digits=10, decimal_places=2, default=1000,
+        help_text="Refundable deposit collected at pickup, returned on safe return of the gear."
+    )
+    down_payment_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text="Amount required upfront to secure the booking (e.g. 50% of total cost)."
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -112,11 +130,18 @@ class Booking(models.Model):
     def __str__(self):
         return f"{self.equipment.name} - {self.customer}"
 
+    @property
+    def balance_due(self):
+        """Remaining amount owed after the down payment, excluding the refundable deposit."""
+        return self.total_cost - self.down_payment_amount
+
 
 class Payment(models.Model):
     METHOD_CHOICES = [
         ('cash', 'Cash'),
         ('gcash', 'GCash'),
+        ('gotyme', 'GoTyme Bank'),
+        ('maribank', 'Maribank'),
         ('bank_transfer', 'Bank Transfer'),
         ('card', 'Card'),
     ]

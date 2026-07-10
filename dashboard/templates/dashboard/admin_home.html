@@ -1,0 +1,70 @@
+{% extends 'app_base.html' %}
+{% block title %}Admin Dashboard - klick.cebu{% endblock %}
+{% block content %}
+<div class="content-wrap">
+    {% if messages %}
+        {% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}
+    {% endif %}
+
+    <div class="page-header">
+        <h2>Overview</h2>
+        <div class="action-row">
+            <a href="{% url 'rentals:equipment_create' %}" class="btn-kc-sm">+ Equipment</a>
+            <a href="{% url 'rentals:category_list' %}" class="btn-kc-sm outline">Categories</a>
+            <a href="{% url 'dashboard:user_list' %}" class="btn-kc-sm outline">Users</a>
+        </div>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card"><div class="label">Total Users</div><div class="value">{{ total_users }}</div></div>
+        <div class="stat-card"><div class="label">Equipment Listed</div><div class="value">{{ total_equipment }}</div></div>
+        <div class="stat-card"><div class="label">Categories</div><div class="value">{{ total_categories }}</div></div>
+        <div class="stat-card"><div class="label">Total Bookings</div><div class="value">{{ total_bookings }}</div></div>
+        <div class="stat-card"><div class="label">Pending Bookings</div><div class="value">{{ pending_bookings }}</div></div>
+        <div class="stat-card"><div class="label">Revenue Collected</div><div class="value">₱{{ revenue }}</div></div>
+    </div>
+
+    <div class="dash-columns">
+        <div>
+            <h2 class="dash-title dash-subtitle">Recent Bookings</h2>
+            <table class="dash-table">
+                <thead><tr><th>Customer</th><th>Equipment</th><th>Dates</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% for b in recent_bookings %}
+                    <tr>
+                        <td>{{ b.customer.first_name|default:b.customer.email }}</td>
+                        <td>{{ b.equipment.name }}</td>
+                        <td>{{ b.start_date|date:"M d" }} – {{ b.end_date|date:"M d" }}</td>
+                        <td>
+                            <span class="badge-kc
+                                {% if b.status == 'confirmed' or b.status == 'completed' %}green
+                                {% elif b.status == 'pending' %}yellow
+                                {% elif b.status == 'cancelled' %}red
+                                {% else %}blue{% endif %}">{{ b.get_status_display }}</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">No bookings yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p class="table-footlink"><a href="{% url 'rentals:booking_list' %}">View all bookings →</a></p>
+        </div>
+
+        <div>
+            <h2 class="dash-title dash-subtitle">Recently Registered Users</h2>
+            <table class="dash-table">
+                <thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead>
+                <tbody>
+                    {% for u in recent_users %}
+                    <tr><td>{{ u.first_name }} {{ u.last_name }}</td><td>{{ u.email }}</td><td>{{ u.get_role_display }}</td></tr>
+                    {% empty %}
+                    <tr><td colspan="3">No users yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p class="table-footlink"><a href="{% url 'dashboard:user_list' %}">Manage all users →</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

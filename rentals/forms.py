@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 from django.db.models import Q
 from .models import Category, Equipment, EquipmentImage, Booking, Payment
@@ -55,20 +57,43 @@ class EquipmentImageForm(forms.ModelForm):
         fields = ['image', 'is_primary']
 
 
+class AddonModelMultipleChoiceField(forms.ModelMultipleChoiceField):
+    def label_from_instance(self, obj):
+        return obj.name
+
+
 class BookingForm(forms.ModelForm):
+    addons = AddonModelMultipleChoiceField(
+        queryset=Equipment.objects.none(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        help_text="Optional extras for this booking.",
+    )
+
     class Meta:
         model = Booking
-        # total_cost is intentionally excluded — it's always derived from
-        # equipment.daily_rate x number of rental days, never typed in.
-        fields = ['equipment', 'start_date', 'end_date', 'pickup_method', 'payment_method', 'status']
+        # total_cost and down_payment_amount are intentionally excluded — both are
+        # always derived from equipment/addon daily_rate x number of rental days.
+        fields = ['equipment', 'start_date', 'end_date', 'addons', 'contact_facebook',
+                   'pickup_method', 'payment_method', 'status']
         widgets = {
             'equipment': forms.Select(attrs=WIDGET_ATTRS),
             'start_date': forms.DateInput(attrs={**WIDGET_ATTRS, 'type': 'date'}),
             'end_date': forms.DateInput(attrs={**WIDGET_ATTRS, 'type': 'date'}),
+            'contact_facebook': forms.TextInput(attrs={**WIDGET_ATTRS, 'placeholder': 'facebook.com/yourprofile'}),
             'pickup_method': forms.Select(attrs=WIDGET_ATTRS),
-            'payment_method': forms.Select(attrs=WIDGET_ATTRS),
+            'payment_method': forms.RadioSelect,
             'status': forms.Select(attrs=WIDGET_ATTRS),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        accessories = Equipment.objects.filter(categories__name__iexact='Accessories', is_available=True).distinct()
+        self.fields['addons'].queryset = accessories
+        if self.instance and self.instance.pk:
+            self.fields['addons'].initial = self.instance.addons.all()
+        # Equipment picked as the main item shouldn't also be pickable as its own add-on.
+        self.fields['equipment'].queryset = Equipment.objects.filter(is_available=True)
 
     def clean(self):
         cleaned = super().clean()
@@ -101,9 +126,13 @@ class BookingForm(forms.ModelForm):
         instance = super().save(commit=False)
         days = (instance.end_date - instance.start_date).days + 1
         days = max(days, 1)
-        instance.total_cost = instance.equipment.daily_rate * days
+        addons = self.cleaned_data.get('addons') or []
+        addon_daily_total = sum((item.daily_rate for item in addons), Decimal('0'))
+        instance.total_cost = (instance.equipment.daily_rate + addon_daily_total) * days
+        instance.down_payment_amount = (instance.total_cost / 2).quantize(Decimal('0.01'))
         if commit:
             instance.save()
+            self.save_m2m()
         return instance
 
 

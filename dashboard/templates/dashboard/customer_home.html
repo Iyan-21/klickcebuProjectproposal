@@ -1,0 +1,69 @@
+{% extends 'app_base.html' %}
+{% block title %}My Dashboard - klick.cebu{% endblock %}
+{% block content %}
+<div class="content-wrap">
+    {% if messages %}
+        {% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}
+    {% endif %}
+
+    <div class="page-header">
+        <h2>Welcome back{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}</h2>
+        <div class="action-row">
+            <a href="{% url 'rentals:equipment_list' %}" class="btn-kc-sm">Browse Equipment</a>
+            <a href="{% url 'rentals:booking_create' %}" class="btn-kc-sm outline">New Booking</a>
+        </div>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card"><div class="label">Active Bookings</div><div class="value">{{ active_count }}</div></div>
+        <div class="stat-card"><div class="label">Total Bookings</div><div class="value">{{ total_bookings }}</div></div>
+        <div class="stat-card"><div class="label">Total Spent</div><div class="value">₱{{ total_spent }}</div></div>
+    </div>
+
+    <h2 class="dash-title dash-subtitle">Your Upcoming &amp; Active Bookings</h2>
+    {% if upcoming_bookings %}
+    <table class="dash-table">
+        <thead><tr><th>Equipment</th><th>Dates</th><th>Pickup</th><th>Status</th></tr></thead>
+        <tbody>
+            {% for b in upcoming_bookings %}
+            <tr>
+                <td>{{ b.equipment.name }}</td>
+                <td>{{ b.start_date|date:"M d" }} – {{ b.end_date|date:"M d, Y" }}</td>
+                <td>{{ b.get_pickup_method_display }}</td>
+                <td>
+                    <span class="badge-kc
+                        {% if b.status == 'confirmed' %}green
+                        {% elif b.status == 'pending' %}yellow
+                        {% elif b.status == 'ongoing' %}blue
+                        {% else %}gray{% endif %}">{{ b.get_status_display }}</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="table-footlink"><a href="{% url 'rentals:booking_list' %}">View all your bookings →</a></p>
+    {% else %}
+    <div class="empty-state">
+        You have no active bookings yet.<br>
+        <a href="{% url 'rentals:equipment_list' %}" class="btn-kc" style="margin-top:14px;">Browse Equipment</a>
+    </div>
+    {% endif %}
+
+    {% if featured_equipment %}
+    <h2 class="dash-title dash-subtitle">Fresh Gear to Try</h2>
+    <div class="equip-grid">
+        {% for item in featured_equipment %}
+        <a href="{% url 'rentals:equipment_detail' item.pk %}" class="equip-card">
+            <div class="thumb"{% if item.primary_image %} style="background-image:url('{{ item.primary_image.image.url }}')"{% endif %}>
+                {% if not item.primary_image %}No Photo{% endif %}
+            </div>
+            <div class="body">
+                <div class="name">{{ item.name }}</div>
+                <div class="rate">₱{{ item.daily_rate }}<span class="rate-unit">/day</span></div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'accounts',
     'dashboard',
     'rentals',
+    'pages',
 ]
 
 MIDDLEWARE = [
