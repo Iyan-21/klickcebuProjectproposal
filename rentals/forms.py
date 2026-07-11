@@ -92,8 +92,11 @@ class BookingForm(forms.ModelForm):
         self.fields['addons'].queryset = accessories
         if self.instance and self.instance.pk:
             self.fields['addons'].initial = self.instance.addons.all()
-        # Equipment picked as the main item shouldn't also be pickable as its own add-on.
-        self.fields['equipment'].queryset = Equipment.objects.filter(is_available=True)
+        # Equipment picked as the main item should be camera bodies specifically —
+        # but fall back to the full catalog if no "Cameras" category items exist yet,
+        # so the form never ships an empty dropdown.
+        cameras = Equipment.objects.filter(categories__name__iexact='Cameras', is_available=True).distinct()
+        self.fields['equipment'].queryset = cameras if cameras.exists() else Equipment.objects.filter(is_available=True)
 
     def clean(self):
         cleaned = super().clean()

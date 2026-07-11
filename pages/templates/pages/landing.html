@@ -4,7 +4,10 @@
 
 {% block content %}
 
-<section class="hero-kc">
+<section class="hero-kc" id="hero">
+  <div class="ambient-blob ambient-blob-1"></div>
+  <div class="ambient-blob ambient-blob-2"></div>
+  <div class="ambient-blob ambient-blob-3"></div>
   <div class="container-kc hero-kc-inner">
     <div class="hero-copy">
       <span class="auth-eyebrow">CEBU'S CAMERA RENTAL</span>
@@ -24,10 +27,12 @@
       </div>
     </div>
     <div class="hero-visual" aria-hidden="true">
-      <div class="lens-ring lens-ring-1"></div>
-      <div class="lens-ring lens-ring-2"></div>
-      <div class="lens-ring lens-ring-3"></div>
-      <div class="lens-glint"></div>
+      <div class="glass-shelf" data-depth="10"></div>
+      <div class="lens-ring lens-ring-1" data-depth="30"></div>
+      <div class="lens-ring lens-ring-2" data-depth="55"></div>
+      <div class="lens-ring lens-ring-3" data-depth="85"></div>
+      <div class="lens-glint" data-depth="95"></div>
+      <div class="lens-glint-sm" data-depth="110"></div>
     </div>
   </div>
 </section>
@@ -113,4 +118,5 @@
   </div>
 </footer>
 
+<script src="{% static 'js/landing.js' %}" defer></script>
 {% endblock %}
