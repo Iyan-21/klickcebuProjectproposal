@@ -1,3 +1,4 @@
+# rentals/views.py
 import json
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -86,7 +87,10 @@ def equipment_list(request):
 
 def equipment_detail(request, pk):
     item = get_object_or_404(Equipment.objects.prefetch_related('images', 'categories'), pk=pk)
-    return render(request, 'rentals/equipment_detail.html', {'item': item})
+    context = {'item': item}
+    if is_admin(request.user):
+        context['booking_history'] = item.bookings.select_related('customer').order_by('-created_at')[:20]
+    return render(request, 'rentals/equipment_detail.html', context)
 
 
 @login_required

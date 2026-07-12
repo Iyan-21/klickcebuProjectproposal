@@ -1,3 +1,4 @@
+# rentals/forms.py
 from decimal import Decimal
 
 from django import forms
@@ -74,12 +75,13 @@ class BookingForm(forms.ModelForm):
         model = Booking
         # total_cost and down_payment_amount are intentionally excluded — both are
         # always derived from equipment/addon daily_rate x number of rental days.
-        fields = ['equipment', 'start_date', 'end_date', 'addons', 'contact_facebook',
+        fields = ['equipment', 'start_date', 'end_date', 'return_date', 'addons', 'contact_facebook',
                    'pickup_method', 'payment_method', 'status']
         widgets = {
             'equipment': forms.Select(attrs=WIDGET_ATTRS),
             'start_date': forms.DateInput(attrs={**WIDGET_ATTRS, 'type': 'date'}),
             'end_date': forms.DateInput(attrs={**WIDGET_ATTRS, 'type': 'date'}),
+            'return_date': forms.DateInput(attrs={**WIDGET_ATTRS, 'type': 'date'}),
             'contact_facebook': forms.TextInput(attrs={**WIDGET_ATTRS, 'placeholder': 'facebook.com/yourprofile'}),
             'pickup_method': forms.Select(attrs=WIDGET_ATTRS),
             'payment_method': forms.RadioSelect,

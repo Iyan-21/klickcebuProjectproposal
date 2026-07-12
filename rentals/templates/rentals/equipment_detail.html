@@ -1,3 +1,4 @@
+<!-- rentals/templates/rentals/equipment_detail.html -->
 {% extends 'app_base.html' %}
 {% block title %}{{ item.name }} - KlickCebu{% endblock %}
 {% block content %}
@@ -59,5 +60,33 @@
             {% endif %}
         </div>
     </div>
+
+    {% if booking_history is not None %}
+    <h2 class="dash-title dash-subtitle">Rental History</h2>
+    {% if booking_history %}
+    <table class="dash-table">
+        <thead><tr><th>Customer</th><th>Dates</th><th>Returned</th><th>Status</th><th>Total</th></tr></thead>
+        <tbody>
+            {% for b in booking_history %}
+            <tr>
+                <td>{{ b.customer.first_name|default:b.customer.email }}</td>
+                <td>{{ b.start_date|date:"M d" }} – {{ b.end_date|date:"M d, Y" }}</td>
+                <td>{{ b.return_date|date:"M d, Y"|default:"—" }}</td>
+                <td>
+                    <span class="badge-kc
+                        {% if b.status == 'confirmed' or b.status == 'completed' %}green
+                        {% elif b.status == 'pending' %}yellow
+                        {% elif b.status == 'cancelled' %}red
+                        {% else %}blue{% endif %}">{{ b.get_status_display }}</span>
+                </td>
+                <td>₱{{ b.total_cost }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">No bookings for this item yet.</div>
+    {% endif %}
+    {% endif %}
 </div>
 {% endblock %}
