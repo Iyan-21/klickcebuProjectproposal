@@ -1,0 +1,58 @@
+{% extends 'app_base.html' %}
+{% block title %}My Profile - klick.cebu{% endblock %}
+{% block content %}
+<div class="content-wrap">
+    <div class="page-header">
+        <h2>My Profile</h2>
+    </div>
+
+    <div class="form-card">
+        <div class="profile-head">
+            <span class="nav-avatar profile-avatar">{% if request.user.first_name %}{{ request.user.first_name|slice:':1' }}{{ request.user.last_name|slice:':1' }}{% else %}{{ request.user.email|slice:':2'|upper }}{% endif %}</span>
+            <div>
+                <div class="profile-name">{{ request.user.first_name }} {{ request.user.last_name }}</div>
+                <div class="profile-email">{{ request.user.email }}</div>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group-kc">
+                <label>First Name</label>
+                {{ form.first_name }}
+            </div>
+            <div class="form-group-kc">
+                <label>Last Name</label>
+                {{ form.last_name }}
+            </div>
+            <div class="form-group-kc">
+                <label>Contact Number</label>
+                {{ form.contact_number }}
+            </div>
+            <div class="form-group-kc">
+                <label>Facebook Profile</label>
+                {{ form.facebook_url }}
+                <p class="field-hint">Used as a backup contact method for bookings.</p>
+            </div>
+            <div class="form-group-kc">
+                <label>Pickup / Delivery Address</label>
+                {{ form.address }}
+            </div>
+            <div class="form-group-kc">
+                <label>Valid ID</label>
+                {% if request.user.valid_id %}
+                <div class="id-preview">
+                    <img src="{{ request.user.valid_id.url }}" alt="Current ID on file">
+                    <span class="badge-kc green">ID on file</span>
+                </div>
+                {% else %}
+                <p class="field-hint">Upload a government-issued ID to verify your identity for rentals.</p>
+                {% endif %}
+                {{ form.valid_id }}
+            </div>
+
+            <button type="submit" class="btn-kc">Save Changes</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

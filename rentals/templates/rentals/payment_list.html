@@ -2,20 +2,32 @@
 {% block title %}Payments - KlickCebu{% endblock %}
 {% block content %}
 <div class="content-wrap">
-    {% if messages %}{% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}{% endif %}
     <div class="page-header">
         <h2>Payments</h2>
         <a href="{% url 'rentals:payment_create' %}" class="btn-kc">+ Record Payment</a>
     </div>
+
+    <div class="stat-grid">
+        <div class="stat-card"><div class="label">Total Collected</div><div class="value">₱{{ totals.collected }}</div></div>
+        <div class="stat-card"><div class="label">Pending</div><div class="value">₱{{ totals.pending }}</div></div>
+        <div class="stat-card"><div class="label">This Month</div><div class="value">₱{{ totals.this_month }}</div></div>
+        <div class="stat-card"><div class="label">Total Records</div><div class="value">{{ totals.count }}</div></div>
+    </div>
+
     <table class="dash-table">
         <thead><tr><th>Booking</th><th>Customer</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th><th>Reference #</th><th>Actions</th></tr></thead>
         <tbody>
             {% for p in payments %}
             <tr>
                 <td>#{{ p.booking.pk }} — {{ p.booking.equipment.name }}</td>
-                <td>{{ p.booking.customer.email }}</td>
-                <td>₱{{ p.amount }}</td>
-                <td>{{ p.get_payment_method_display }}</td>
+                <td>
+                    <div class="cell-customer">
+                        <span class="nav-avatar table-avatar">{% if p.booking.customer.first_name %}{{ p.booking.customer.first_name|slice:':1' }}{{ p.booking.customer.last_name|slice:':1' }}{% else %}{{ p.booking.customer.email|slice:':2'|upper }}{% endif %}</span>
+                        {{ p.booking.customer.first_name|default:p.booking.customer.email }}
+                    </div>
+                </td>
+                <td class="cell-amount">₱{{ p.amount }}</td>
+                <td><span class="method-pill">{{ p.get_payment_method_display }}</span></td>
                 <td>
                     {% if p.payment_status == 'paid' %}<span class="badge-kc green">{{ p.get_payment_status_display }}</span>
                     {% elif p.payment_status == 'refunded' or p.payment_status == 'failed' %}<span class="badge-kc red">{{ p.get_payment_status_display }}</span>

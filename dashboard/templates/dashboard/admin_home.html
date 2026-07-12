@@ -2,9 +2,6 @@
 {% block title %}Admin Dashboard - klick.cebu{% endblock %}
 {% block content %}
 <div class="content-wrap">
-    {% if messages %}
-        {% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}
-    {% endif %}
 
     <div class="page-header">
         <h2>Overview</h2>
@@ -22,6 +19,18 @@
         <div class="stat-card"><div class="label">Total Bookings</div><div class="value">{{ total_bookings }}</div></div>
         <div class="stat-card"><div class="label">Pending Bookings</div><div class="value">{{ pending_bookings }}</div></div>
         <div class="stat-card"><div class="label">Revenue Collected</div><div class="value">₱{{ revenue }}</div></div>
+    </div>
+
+    <h2 class="dash-title dash-subtitle">Revenue, Last 6 Months</h2>
+    <div class="revenue-chart">
+        {% for m in revenue_chart %}
+        <div class="revenue-bar-col">
+            <div class="revenue-bar-track">
+                <div class="revenue-bar" style="height: {{ m.pct }}%;" title="₱{{ m.value }}"></div>
+            </div>
+            <span class="revenue-bar-label">{{ m.label }}</span>
+        </div>
+        {% endfor %}
     </div>
 
     <div class="dash-columns">

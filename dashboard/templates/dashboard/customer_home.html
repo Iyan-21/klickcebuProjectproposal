@@ -2,9 +2,6 @@
 {% block title %}My Dashboard - klick.cebu{% endblock %}
 {% block content %}
 <div class="content-wrap">
-    {% if messages %}
-        {% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}
-    {% endif %}
 
     <div class="page-header">
         <h2>Welcome back{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}</h2>

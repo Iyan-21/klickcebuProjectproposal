@@ -16,7 +16,7 @@
             <a href="{% url 'rentals:payment_list' %}" class="{% if request.resolver_match.view_name == 'rentals:payment_list' %}active{% endif %}">Payments</a>
             <a href="{% url 'dashboard:user_list' %}" class="{% if request.resolver_match.view_name == 'dashboard:user_list' %}active{% endif %}">Users</a>
             {% endif %}
-            <span class="nav-avatar" title="{{ request.user.first_name }} {{ request.user.last_name }}">{% if request.user.first_name %}{{ request.user.first_name|slice:':1' }}{{ request.user.last_name|slice:':1' }}{% else %}{{ request.user.email|slice:':2'|upper }}{% endif %}</span>
+            <a href="{% url 'accounts:profile' %}" class="nav-avatar-link"><span class="nav-avatar" title="{{ request.user.first_name }} {{ request.user.last_name }}">{% if request.user.first_name %}{{ request.user.first_name|slice:':1' }}{{ request.user.last_name|slice:':1' }}{% else %}{{ request.user.email|slice:':2'|upper }}{% endif %}</span></a>
             <a href="{% url 'accounts:logout' %}" class="btn-kc-outline-light">Logout</a>
         {% else %}
             <a href="{% url 'accounts:login' %}">Login</a>

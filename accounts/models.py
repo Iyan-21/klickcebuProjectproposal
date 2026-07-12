@@ -10,6 +10,15 @@ class User(AbstractUser):
 
     email = models.EmailField(unique=True)
     contact_number = models.CharField(max_length=20, blank=True)
+    facebook_url = models.CharField(
+        max_length=255, blank=True,
+        help_text="Facebook profile URL, used as a backup contact method."
+    )
+    address = models.CharField(max_length=255, blank=True)
+    valid_id = models.ImageField(
+        upload_to='user_ids/', blank=True, null=True,
+        help_text="Photo of a government-issued ID, used to verify identity for rentals."
+    )
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='customer')
     failed_attempts = models.PositiveIntegerField(default=0)
     is_locked = models.BooleanField(default=False)

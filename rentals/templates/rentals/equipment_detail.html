@@ -1,9 +1,7 @@
-<!-- rentals/templates/rentals/equipment_detail.html -->
 {% extends 'app_base.html' %}
 {% block title %}{{ item.name }} - KlickCebu{% endblock %}
 {% block content %}
 <div class="content-wrap">
-    {% if messages %}{% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}{% endif %}
     <div class="page-header">
         <h2>{{ item.name }}</h2>
         {% if request.user.is_authenticated and request.user.role == 'admin' or request.user.is_superuser %}

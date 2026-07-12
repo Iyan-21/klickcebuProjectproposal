@@ -1,10 +1,11 @@
-# rentals/views.py
 import json
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, Sum
+from django.utils import timezone
 
 from .models import Category, Equipment, EquipmentImage, Booking, Payment
 from .forms import (
@@ -76,12 +77,29 @@ def equipment_list(request):
         equipment = equipment.filter(Q(name__icontains=query) | Q(description__icontains=query))
     if category_id:
         equipment = equipment.filter(categories__id=category_id)
+    equipment = equipment.distinct()
     categories = Category.objects.all()
+
+    quickview_data = {}
+    for item in equipment:
+        quickview_data[item.pk] = {
+            'name': item.name,
+            'rate': str(item.daily_rate),
+            'description': item.description or '',
+            'condition': item.get_condition_display(),
+            'category': item.categories.first().name if item.categories.first() else '',
+            'available': item.is_available,
+            'image': item.primary_image.image.url if item.primary_image else '',
+            'detail_url': reverse('rentals:equipment_detail', args=[item.pk]),
+            'book_url': f"{reverse('rentals:booking_create')}?equipment={item.pk}",
+        }
+
     return render(request, 'rentals/equipment_list.html', {
-        'equipment_list': equipment.distinct(),
+        'equipment_list': equipment,
         'categories': categories,
         'selected_category': category_id,
         'query': query or '',
+        'quickview_data': quickview_data,
     })
 
 
@@ -171,7 +189,15 @@ def booking_list(request):
         bookings = Booking.objects.select_related('customer', 'equipment').all()
     else:
         bookings = Booking.objects.select_related('equipment').filter(customer=request.user)
-    return render(request, 'rentals/booking_list.html', {'bookings': bookings})
+
+    status_counts = {
+        'total': bookings.count(),
+        'pending': bookings.filter(status='pending').count(),
+        'active': bookings.filter(status__in=['confirmed', 'ongoing']).count(),
+        'completed': bookings.filter(status='completed').count(),
+        'cancelled': bookings.filter(status='cancelled').count(),
+    }
+    return render(request, 'rentals/booking_list.html', {'bookings': bookings, 'status_counts': status_counts})
 
 
 @login_required
@@ -191,7 +217,11 @@ def booking_create(request):
             messages.success(request, 'Booking created.')
             return redirect('rentals:booking_list')
     else:
-        form = BookingForm()
+        initial = {}
+        preselect_id = request.GET.get('equipment')
+        if preselect_id and preselect_id.isdigit():
+            initial['equipment'] = preselect_id
+        form = BookingForm(initial=initial)
         if not admin:
             form.fields.pop('status')
 
@@ -248,7 +278,16 @@ def booking_delete(request, pk):
 @user_passes_test(is_admin, login_url='dashboard:home')
 def payment_list(request):
     payments = Payment.objects.select_related('booking', 'booking__customer', 'booking__equipment').all()
-    return render(request, 'rentals/payment_list.html', {'payments': payments})
+    today = timezone.localdate()
+    totals = {
+        'collected': payments.filter(payment_status='paid').aggregate(s=Sum('amount'))['s'] or 0,
+        'pending': payments.filter(payment_status='pending').aggregate(s=Sum('amount'))['s'] or 0,
+        'this_month': payments.filter(
+            payment_status='paid', payment_date__year=today.year, payment_date__month=today.month
+        ).aggregate(s=Sum('amount'))['s'] or 0,
+        'count': payments.count(),
+    }
+    return render(request, 'rentals/payment_list.html', {'payments': payments, 'totals': totals})
 
 
 @login_required
@@ -286,6 +325,3 @@ def payment_delete(request, pk):
     payment = get_object_or_404(Payment, pk=pk)
     if request.method == 'POST':
         payment.delete()
-        messages.success(request, 'Payment record deleted.')
-        return redirect('rentals:payment_list')
-    return render(request, 'rentals/confirm_delete.html', {'object': payment, 'back_url': 'rentals:payment_list'})

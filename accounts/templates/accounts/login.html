@@ -7,11 +7,6 @@
         <h1>Login to KlickCebu</h1>
         <p class="sub">Access your bookings and rental history.</p>
 
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert-kc {% if message.tags == 'success' %}success{% else %}error{% endif %}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
 
         <form method="post">
             {% csrf_token %}

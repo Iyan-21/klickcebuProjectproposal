@@ -2,11 +2,19 @@
 {% block title %}Bookings - KlickCebu{% endblock %}
 {% block content %}
 <div class="content-wrap">
-    {% if messages %}{% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}{% endif %}
     <div class="page-header">
         <h2>Bookings</h2>
         <a href="{% url 'rentals:booking_create' %}" class="btn-kc">+ New Booking</a>
     </div>
+
+    <div class="stat-grid">
+        <div class="stat-card"><div class="label">Total</div><div class="value">{{ status_counts.total }}</div></div>
+        <div class="stat-card"><div class="label">Pending</div><div class="value">{{ status_counts.pending }}</div></div>
+        <div class="stat-card"><div class="label">Active</div><div class="value">{{ status_counts.active }}</div></div>
+        <div class="stat-card"><div class="label">Completed</div><div class="value">{{ status_counts.completed }}</div></div>
+        <div class="stat-card"><div class="label">Cancelled</div><div class="value">{{ status_counts.cancelled }}</div></div>
+    </div>
+
     <table class="dash-table">
         <thead><tr>
             {% if request.user.role == 'admin' or request.user.is_superuser %}<th>Customer</th>{% endif %}
@@ -15,7 +23,14 @@
         <tbody>
             {% for b in bookings %}
             <tr>
-                {% if request.user.role == 'admin' or request.user.is_superuser %}<td>{{ b.customer.email }}</td>{% endif %}
+                {% if request.user.role == 'admin' or request.user.is_superuser %}
+                <td>
+                    <div class="cell-customer">
+                        <span class="nav-avatar table-avatar">{% if b.customer.first_name %}{{ b.customer.first_name|slice:':1' }}{{ b.customer.last_name|slice:':1' }}{% else %}{{ b.customer.email|slice:':2'|upper }}{% endif %}</span>
+                        {{ b.customer.first_name|default:b.customer.email }}
+                    </div>
+                </td>
+                {% endif %}
                 <td>{{ b.equipment.name }}</td>
                 <td>{{ b.start_date }}</td>
                 <td>{{ b.end_date }}</td>

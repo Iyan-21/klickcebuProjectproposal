@@ -5,7 +5,7 @@
     <h2 class="dash-title">Book a Camera</h2>
     <p class="hero-sub booknow-sub">Fill out the form below and we'll confirm your rental.</p>
 
-    {% if messages %}{% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}{% endif %}
+
     {% if form.non_field_errors %}<div class="alert-kc error">{{ form.non_field_errors }}</div>{% endif %}
 
     <form method="post" id="booking-form" class="booknow-grid">

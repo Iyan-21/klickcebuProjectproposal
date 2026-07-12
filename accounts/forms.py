@@ -23,3 +23,16 @@ class RegisterForm(UserCreationForm):
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError("An account with this email already exists.")
         return email
+
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'contact_number', 'facebook_url', 'address', 'valid_id']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control-kc'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control-kc'}),
+            'contact_number': forms.TextInput(attrs={'class': 'form-control-kc', 'placeholder': '09XX-XXX-XXXX'}),
+            'facebook_url': forms.TextInput(attrs={'class': 'form-control-kc', 'placeholder': 'facebook.com/yourprofile'}),
+            'address': forms.TextInput(attrs={'class': 'form-control-kc', 'placeholder': 'Pickup/delivery address'}),
+        }

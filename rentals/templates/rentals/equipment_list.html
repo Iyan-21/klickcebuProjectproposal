@@ -2,7 +2,6 @@
 {% block title %}Equipment - KlickCebu{% endblock %}
 {% block content %}
 <div class="content-wrap">
-    {% if messages %}{% for message in messages %}<div class="alert-kc success">{{ message }}</div>{% endfor %}{% endif %}
     <div class="page-header">
         <h2>Equipment Catalog</h2>
         {% if request.user.is_authenticated and request.user.role == 'admin' or request.user.is_superuser %}
@@ -10,9 +9,9 @@
         {% endif %}
     </div>
 
-    <form method="get" class="filter-bar">
-        <input type="text" name="q" placeholder="Search equipment..." value="{{ query }}">
-        <select name="category" onchange="this.form.submit()">
+    <form method="get" class="filter-bar" id="equip-filter-form">
+        <input type="text" name="q" id="live-search-input" placeholder="Search equipment..." value="{{ query }}" autocomplete="off">
+        <select name="category" id="live-category-select">
             <option value="">All Categories</option>
             {% for c in categories %}
             <option value="{{ c.pk }}" {% if selected_category == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
@@ -20,10 +19,12 @@
         </select>
         <button type="submit" class="btn-kc-sm">Filter</button>
     </form>
+    <p class="live-search-hint" id="live-search-hint" hidden>Showing <span id="live-search-count"></span> of {{ equipment_list|length }} items</p>
 
-    <div class="equip-grid">
+    <div class="equip-grid" id="equip-grid">
         {% for item in equipment_list %}
-        <a href="{% url 'rentals:equipment_detail' item.pk %}" class="equip-card">
+        <a href="{% url 'rentals:equipment_detail' item.pk %}" class="equip-card"
+           data-equip-name="{{ item.name|lower }}" data-equip-category="{{ item.categories.first.name|default:''|lower }}">
             {% if item.primary_image %}
             <div class="thumb" style="background-image:url('{{ item.primary_image.image.url }}');"></div>
             {% else %}
@@ -35,11 +36,133 @@
                 <div class="name">{{ item.name }}</div>
                 <div class="rate">₱{{ item.daily_rate }}<span class="rate-unit">/day</span></div>
             </div>
-            <div class="equip-hover-overlay"><span>View details</span></div>
+            <div class="equip-hover-overlay">
+                <button type="button" class="quick-view-btn" data-quickview-id="{{ item.pk }}">Quick View</button>
+            </div>
         </a>
         {% empty %}
         <div class="empty-state">No equipment found.</div>
         {% endfor %}
     </div>
+    <p class="empty-state live-no-results" id="live-no-results" hidden>No equipment matches your search.</p>
 </div>
+
+{{ quickview_data|json_script:"equip-data" }}
+
+<div class="qv-modal-backdrop" id="qv-modal-backdrop">
+    <div class="qv-modal" role="dialog" aria-modal="true">
+        <button type="button" class="qv-close" id="qv-close" aria-label="Close">✕</button>
+        <div class="qv-modal-thumb" id="qv-thumb">
+            <span class="equip-cat-pill" id="qv-category"></span>
+            <span class="equip-status-dot" id="qv-status-dot"></span>
+        </div>
+        <div class="qv-modal-body">
+            <h3 id="qv-name"></h3>
+            <div class="qv-rate" id="qv-rate"></div>
+            <p id="qv-description" class="qv-description"></p>
+            <p class="qv-condition"><strong>Condition:</strong> <span id="qv-condition"></span></p>
+            <div class="qv-actions">
+                <a href="#" id="qv-detail-link" class="btn-kc-outline">Full Details</a>
+                <a href="#" id="qv-book-link" class="btn-kc">Book Now</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var grid = document.getElementById('equip-grid');
+    var searchInput = document.getElementById('live-search-input');
+    var categorySelect = document.getElementById('live-category-select');
+    var hint = document.getElementById('live-search-hint');
+    var hintCount = document.getElementById('live-search-count');
+    var noResults = document.getElementById('live-no-results');
+    if (!grid) return;
+    var cards = Array.prototype.slice.call(grid.querySelectorAll('.equip-card'));
+
+    function applyFilter() {
+        var term = (searchInput.value || '').trim().toLowerCase();
+        var cat = (categorySelect.options[categorySelect.selectedIndex].text || '').toLowerCase();
+        var catActive = categorySelect.value !== '';
+        var visibleCount = 0;
+
+        cards.forEach(function (card) {
+            var name = card.getAttribute('data-equip-name') || '';
+            var cardCat = card.getAttribute('data-equip-category') || '';
+            var matchesTerm = !term || name.indexOf(term) !== -1;
+            var matchesCat = !catActive || cardCat === cat;
+            var visible = matchesTerm && matchesCat;
+            card.style.display = visible ? '' : 'none';
+            if (visible) visibleCount++;
+        });
+
+        if (term || catActive) {
+            hint.hidden = false;
+            hintCount.textContent = visibleCount;
+        } else {
+            hint.hidden = true;
+        }
+        noResults.hidden = visibleCount !== 0;
+    }
+
+    searchInput.addEventListener('input', applyFilter);
+    categorySelect.addEventListener('change', applyFilter);
+
+    // Quick-view modal
+    var equipData = {};
+    var dataEl = document.getElementById('equip-data');
+    if (dataEl) {
+        try { equipData = JSON.parse(dataEl.textContent); } catch (e) { equipData = {}; }
+    }
+
+    var backdrop = document.getElementById('qv-modal-backdrop');
+    var thumb = document.getElementById('qv-thumb');
+    var elName = document.getElementById('qv-name');
+    var elRate = document.getElementById('qv-rate');
+    var elDesc = document.getElementById('qv-description');
+    var elCondition = document.getElementById('qv-condition');
+    var elCategory = document.getElementById('qv-category');
+    var elStatusDot = document.getElementById('qv-status-dot');
+    var elDetailLink = document.getElementById('qv-detail-link');
+    var elBookLink = document.getElementById('qv-book-link');
+
+    function openModal(id) {
+        var d = equipData[id];
+        if (!d) return;
+        thumb.style.backgroundImage = d.image ? 'url(' + d.image + ')' : 'none';
+        elName.textContent = d.name;
+        elRate.innerHTML = '₱' + d.rate + '<span class="rate-unit">/day</span>';
+        elDesc.textContent = d.description || 'No description available.';
+        elCondition.textContent = d.condition;
+        elCategory.textContent = d.category || '';
+        elCategory.style.display = d.category ? '' : 'none';
+        elStatusDot.className = 'equip-status-dot ' + (d.available ? 'available' : 'unavailable');
+        elDetailLink.href = d.detail_url;
+        elBookLink.href = d.book_url;
+        backdrop.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        backdrop.classList.remove('is-open');
+        document.body.style.overflow = '';
+    }
+
+    grid.addEventListener('click', function (e) {
+        var btn = e.target.closest('.quick-view-btn');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openModal(btn.getAttribute('data-quickview-id'));
+    });
+
+    document.getElementById('qv-close').addEventListener('click', closeModal);
+    backdrop.addEventListener('click', function (e) {
+        if (e.target === backdrop) closeModal();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeModal();
+    });
+})();
+</script>
 {% endblock %}
