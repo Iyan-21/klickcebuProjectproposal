@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Contact — klick.cebu{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container-kc legal-page">
+    <span class="auth-eyebrow">GET IN TOUCH</span>
+    <h1 class="dash-title avail-title">Contact klick.cebu</h1>
+    <p class="hero-sub">Questions about a booking, gear availability, or pickup? Reach us any of these ways.</p>
+
+    <div class="contact-grid">
+      <a href="mailto:hello@klick.cebu" class="contact-card">
+        <h3>Email</h3>
+        <p>hello@klick.cebu</p>
+        <span class="table-footlink">Send a message →</span>
+      </a>
+      <a href="tel:+639171234567" class="contact-card">
+        <h3>Phone / Text</h3>
+        <p>0917-123-4567</p>
+        <span class="table-footlink">Call or text →</span>
+      </a>
+      <a href="https://facebook.com/klickcebu" target="_blank" rel="noopener" class="contact-card">
+        <h3>Facebook</h3>
+        <p>facebook.com/klickcebu</p>
+        <span class="table-footlink">Message us →</span>
+      </a>
+      <div class="contact-card">
+        <h3>Pickup Location</h3>
+        <p>Cebu City, Philippines</p>
+        <span class="avail-empty-note">Exact address shared after booking confirmation.</span>
+      </div>
+    </div>
+
+    <div class="legal-body">
+      <h2>Before you reach out</h2>
+      <p>Check the <a href="{% url 'pages:availability' %}">Availability calendar</a> first — it's often the fastest way to see whether the gear you want is free on your dates. For booking-specific questions, having your booking reference ready helps us respond faster.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

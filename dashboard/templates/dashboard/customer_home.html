@@ -54,13 +54,14 @@
     <div class="equip-grid">
         {% for item in featured_equipment %}
         <a href="{% url 'rentals:equipment_detail' item.pk %}" class="equip-card">
-            <div class="thumb"{% if item.primary_image %} style="background-image:url('{{ item.primary_image.image.url }}')"{% endif %}>
-                {% if not item.primary_image %}No Photo{% endif %}
-            </div>
-            <div class="body">
+            <div class="thumb"{% if item.primary_image %} style="background-image:url('{{ item.primary_image.image.url }}')"{% endif %}></div>
+            {% if item.categories.first %}<span class="equip-cat-pill">{{ item.categories.first.name }}</span>{% endif %}
+            <span class="equip-status-dot {% if item.is_available %}available{% else %}unavailable{% endif %}"></span>
+            <div class="equip-scrim">
                 <div class="name">{{ item.name }}</div>
                 <div class="rate">₱{{ item.daily_rate }}<span class="rate-unit">/day</span></div>
             </div>
+            <div class="equip-hover-overlay"><span>View details</span></div>
         </a>
         {% endfor %}
     </div>

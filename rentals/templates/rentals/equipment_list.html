@@ -27,18 +27,15 @@
             {% if item.primary_image %}
             <div class="thumb" style="background-image:url('{{ item.primary_image.image.url }}');"></div>
             {% else %}
-            <div class="thumb">No image</div>
+            <div class="thumb"></div>
             {% endif %}
-            <div class="body">
+            {% if item.categories.first %}<span class="equip-cat-pill">{{ item.categories.first.name }}</span>{% endif %}
+            <span class="equip-status-dot {% if item.is_available %}available{% else %}unavailable{% endif %}"></span>
+            <div class="equip-scrim">
                 <div class="name">{{ item.name }}</div>
-                <div class="rate">₱{{ item.daily_rate }}/day</div>
-                <div class="cats">
-                    {% for cat in item.categories.all %}
-                    <span class="badge-kc gray">{{ cat.name }}</span>
-                    {% endfor %}
-                    {% if not item.is_available %}<span class="badge-kc red">Unavailable</span>{% endif %}
-                </div>
+                <div class="rate">₱{{ item.daily_rate }}<span class="rate-unit">/day</span></div>
             </div>
+            <div class="equip-hover-overlay"><span>View details</span></div>
         </a>
         {% empty %}
         <div class="empty-state">No equipment found.</div>

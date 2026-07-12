@@ -16,12 +16,16 @@
 <div class="site-content">
 {% block navbar %}
 <nav class="navbar-kc">
-    <a href="{% url 'pages:landing' %}" class="brand">klick.cebu<span class="brand-sub">CAMERA RENTAL</span></a>
+    <a href="{% url 'pages:landing' %}" class="brandline">
+        <span class="nav-mark"></span>
+        <span class="brand">klick.cebu<span class="brand-sub">CAMERA RENTAL</span></span>
+    </a>
     <div class="nav-links">
-        <a href="{% url 'rentals:equipment_list' %}">Equipment</a>
-        <a href="{% url 'pages:availability' %}">Availability</a>
+        <a href="{% url 'rentals:equipment_list' %}" class="{% if request.resolver_match.view_name == 'rentals:equipment_list' %}active{% endif %}">Equipment</a>
+        <a href="{% url 'pages:availability' %}" class="{% if request.resolver_match.view_name == 'pages:availability' %}active{% endif %}">Availability</a>
         {% if request.user.is_authenticated %}
-            <a href="{% url 'dashboard:home' %}">Dashboard</a>
+            <a href="{% url 'dashboard:home' %}" class="{% if request.resolver_match.view_name == 'dashboard:home' %}active{% endif %}">Dashboard</a>
+            <span class="nav-avatar" title="{{ request.user.first_name }} {{ request.user.last_name }}">{% if request.user.first_name %}{{ request.user.first_name|slice:':1' }}{{ request.user.last_name|slice:':1' }}{% else %}{{ request.user.email|slice:':2'|upper }}{% endif %}</span>
             <a href="{% url 'accounts:logout' %}">Logout</a>
         {% else %}
             <a href="{% url 'accounts:login' %}">Login</a>

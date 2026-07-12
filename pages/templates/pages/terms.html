@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Terms & Conditions — klick.cebu{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container-kc legal-page">
+    <span class="auth-eyebrow">THE FINE PRINT</span>
+    <h1 class="dash-title avail-title">Terms &amp; Conditions</h1>
+    <p class="hero-sub">Last updated {% now "F Y" %}. Please read before booking any equipment.</p>
+
+    <div class="legal-body">
+      <h2>1. Rental Period</h2>
+      <p>Rentals are booked for a fixed date range selected at checkout. Equipment must be picked up and returned within the agreed window. Late returns are charged an additional day's rate for each day (or part of a day) beyond the agreed return date.</p>
+
+      <h2>2. Booking &amp; Payment</h2>
+      <p>A down payment (shown as a percentage of the total at booking) is required to secure a reservation. The remaining balance is due at pickup. We accept Cash, GCash, GoTyme Bank, and Maribank transfers.</p>
+
+      <h2>3. Security Deposit</h2>
+      <p>A refundable security deposit is collected at pickup for every booking. It is returned in full once the equipment is inspected and confirmed to be in its original condition. Deposits are not a rental fee and cannot be used to extend or offset a rental balance.</p>
+
+      <h2>4. Equipment Condition &amp; Damage</h2>
+      <p>Renters are responsible for the equipment for the full duration of the rental. Any damage, loss, or theft beyond normal wear will be assessed against the security deposit; costs exceeding the deposit are the renter's responsibility. Please inspect equipment at pickup and report any pre-existing issues immediately.</p>
+
+      <h2>5. Cancellations</h2>
+      <p>Cancellations made with reasonable advance notice may be eligible for a refund of the down payment, at klick.cebu's discretion. Late cancellations or no-shows may forfeit the down payment.</p>
+
+      <h2>6. Pickup &amp; Delivery</h2>
+      <p>Pickup method (meet-up, store pickup, or delivery) is selected at booking. Renters must present a valid ID matching their account details at pickup.</p>
+
+      <h2>7. Liability</h2>
+      <p>klick.cebu is not liable for any indirect damages, missed shoots, or lost content resulting from equipment malfunction. Renters are encouraged to test equipment at pickup before leaving.</p>
+
+      <p class="legal-disclaimer">This page is a general template and hasn't been reviewed by a lawyer — please have it checked against local Philippine consumer and rental law before relying on it for real transactions.</p>
+    </div>
+
+    <a href="{% url 'pages:contact' %}" class="btn-kc">Questions? Contact us</a>
+  </div>
+</section>
+{% endblock %}

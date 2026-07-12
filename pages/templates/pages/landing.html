@@ -27,12 +27,12 @@
       </div>
     </div>
     <div class="hero-visual" aria-hidden="true">
-      <div class="glass-shelf" data-depth="10"></div>
-      <div class="lens-ring lens-ring-1" data-depth="30"></div>
-      <div class="lens-ring lens-ring-2" data-depth="55"></div>
-      <div class="lens-ring lens-ring-3" data-depth="85"></div>
-      <div class="lens-glint" data-depth="95"></div>
-      <div class="lens-glint-sm" data-depth="110"></div>
+      <div class="glass-shelf" data-depth="12"></div>
+      <div class="lens-ring lens-ring-1" data-depth="35"></div>
+      <div class="lens-ring lens-ring-2" data-depth="65"></div>
+      <div class="lens-ring lens-ring-3" data-depth="100"></div>
+      <div class="lens-glint" data-depth="115"></div>
+      <div class="lens-glint-sm" data-depth="130"></div>
     </div>
   </div>
 </section>
@@ -48,18 +48,14 @@
     <div class="equip-grid">
       {% for item in featured_equipment %}
       <a href="{% url 'rentals:equipment_detail' item.pk %}" class="equip-card">
-        <div class="thumb"{% if item.primary_image %} style="background-image:url('{{ item.primary_image.image.url }}')"{% endif %}>
-          {% if not item.primary_image %}No Photo{% endif %}
-        </div>
-        <div class="body">
+        <div class="thumb"{% if item.primary_image %} style="background-image:url('{{ item.primary_image.image.url }}')"{% endif %}></div>
+        {% if item.categories.first %}<span class="equip-cat-pill">{{ item.categories.first.name }}</span>{% endif %}
+        <span class="equip-status-dot {% if item.is_available %}available{% else %}unavailable{% endif %}"></span>
+        <div class="equip-scrim">
           <div class="name">{{ item.name }}</div>
           <div class="rate">₱{{ item.daily_rate }}<span class="rate-unit">/day</span></div>
-          <div class="cats">
-            {% for cat in item.categories.all|slice:":2" %}
-              <span class="badge-kc gray">{{ cat.name }}</span>
-            {% endfor %}
-          </div>
         </div>
+        <div class="equip-hover-overlay"><span>View details</span></div>
       </a>
       {% endfor %}
     </div>
