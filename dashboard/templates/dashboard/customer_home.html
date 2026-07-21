@@ -48,7 +48,7 @@
 
     {% if featured_equipment %}
     <h2 class="dash-title dash-subtitle">Fresh Gear to Try</h2>
-    <div class="equip-grid">
+    <div class="equip-grid" id="dash-equip-grid">
         {% for item in featured_equipment %}
         <a href="{% url 'rentals:equipment_detail' item.pk %}" class="equip-card">
             <div class="thumb"{% if item.primary_image %} style="background-image:url('{{ item.primary_image.image.url }}')"{% endif %}></div>
@@ -58,10 +58,96 @@
                 <div class="name">{{ item.name }}</div>
                 <div class="rate">₱{{ item.daily_rate }}<span class="rate-unit">/day</span></div>
             </div>
-            <div class="equip-hover-overlay"><span>View details</span></div>
+            <div class="equip-hover-overlay">
+                <button type="button" class="quick-view-btn" data-quickview-id="{{ item.pk }}">Quick View</button>
+            </div>
         </a>
         {% endfor %}
     </div>
+
+    {{ quickview_data|json_script:"dash-equip-data" }}
+
+    <div class="qv-modal-backdrop" id="dash-qv-modal-backdrop">
+        <div class="qv-modal" role="dialog" aria-modal="true">
+            <button type="button" class="qv-close" id="dash-qv-close" aria-label="Close">✕</button>
+            <div class="qv-modal-thumb" id="dash-qv-thumb">
+                <span class="equip-cat-pill" id="dash-qv-category"></span>
+                <span class="equip-status-dot" id="dash-qv-status-dot"></span>
+            </div>
+            <div class="qv-modal-body">
+                <h3 id="dash-qv-name"></h3>
+                <div class="qv-rate" id="dash-qv-rate"></div>
+                <p id="dash-qv-description" class="qv-description"></p>
+                <p class="qv-condition"><strong>Condition:</strong> <span id="dash-qv-condition"></span></p>
+                <div class="qv-actions">
+                    <a href="#" id="dash-qv-detail-link" class="btn-kc-outline">Full Details</a>
+                    <a href="#" id="dash-qv-book-link" class="btn-kc">Book Now</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        var grid = document.getElementById('dash-equip-grid');
+        if (!grid) return;
+
+        var equipData = {};
+        var dataEl = document.getElementById('dash-equip-data');
+        if (dataEl) {
+            try { equipData = JSON.parse(dataEl.textContent); } catch (e) { equipData = {}; }
+        }
+
+        var backdrop = document.getElementById('dash-qv-modal-backdrop');
+        var thumb = document.getElementById('dash-qv-thumb');
+        var elName = document.getElementById('dash-qv-name');
+        var elRate = document.getElementById('dash-qv-rate');
+        var elDesc = document.getElementById('dash-qv-description');
+        var elCondition = document.getElementById('dash-qv-condition');
+        var elCategory = document.getElementById('dash-qv-category');
+        var elStatusDot = document.getElementById('dash-qv-status-dot');
+        var elDetailLink = document.getElementById('dash-qv-detail-link');
+        var elBookLink = document.getElementById('dash-qv-book-link');
+
+        function openModal(id) {
+            var d = equipData[id];
+            if (!d) return;
+            thumb.style.backgroundImage = d.image ? 'url(' + d.image + ')' : 'none';
+            elName.textContent = d.name;
+            elRate.innerHTML = '₱' + d.rate + '<span class="rate-unit">/day</span>';
+            elDesc.textContent = d.description || 'No description available.';
+            elCondition.textContent = d.condition;
+            elCategory.textContent = d.category || '';
+            elCategory.style.display = d.category ? '' : 'none';
+            elStatusDot.className = 'equip-status-dot ' + (d.available ? 'available' : 'unavailable');
+            elDetailLink.href = d.detail_url;
+            elBookLink.href = d.book_url;
+            backdrop.classList.add('is-open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            backdrop.classList.remove('is-open');
+            document.body.style.overflow = '';
+        }
+
+        grid.addEventListener('click', function (e) {
+            var btn = e.target.closest('.quick-view-btn');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            openModal(btn.getAttribute('data-quickview-id'));
+        });
+
+        document.getElementById('dash-qv-close').addEventListener('click', closeModal);
+        backdrop.addEventListener('click', function (e) {
+            if (e.target === backdrop) closeModal();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeModal();
+        });
+    })();
+    </script>
     {% endif %}
 </div>
 {% endblock %}

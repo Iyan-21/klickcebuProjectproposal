@@ -5,8 +5,27 @@ from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
+from django.urls import reverse
 from django.utils import timezone
 from rentals.models import Equipment, Booking, Payment, Category
+
+
+def _build_quickview_data(equipment):
+    """Same shape as rentals.views.equipment_list's quickview_data, for reuse on other pages."""
+    data = {}
+    for item in equipment:
+        data[item.pk] = {
+            'name': item.name,
+            'rate': str(item.daily_rate),
+            'description': item.description or '',
+            'condition': item.get_condition_display(),
+            'category': item.categories.first().name if item.categories.first() else '',
+            'available': item.is_available,
+            'image': item.primary_image.image.url if item.primary_image else '',
+            'detail_url': reverse('rentals:equipment_detail', args=[item.pk]),
+            'book_url': f"{reverse('rentals:booking_create')}?equipment={item.pk}",
+        }
+    return data
 
 User = get_user_model()
 
@@ -73,13 +92,15 @@ def customer_home(request):
     total_spent = Payment.objects.filter(
         booking__customer=request.user, payment_status='paid'
     ).aggregate(total=Sum('amount'))['total'] or 0
+    featured_equipment = Equipment.objects.filter(is_available=True) \
+        .prefetch_related('images', 'categories').order_by('-created_at')[:4]
     context = {
         'active_count': active_bookings.count(),
         'total_bookings': bookings.count(),
         'total_spent': total_spent,
         'upcoming_bookings': active_bookings.order_by('start_date')[:5],
-        'featured_equipment': Equipment.objects.filter(is_available=True)
-            .prefetch_related('images', 'categories').order_by('-created_at')[:4],
+        'featured_equipment': featured_equipment,
+        'quickview_data': _build_quickview_data(featured_equipment),
         'today': timezone.localdate(),
     }
     return render(request, 'dashboard/customer_home.html', context)
