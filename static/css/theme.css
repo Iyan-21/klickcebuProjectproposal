@@ -304,6 +304,15 @@ a { transition: color .15s var(--ease); }
 }
 .quick-view-btn:hover { background: var(--accent); color: #2C1D08; }
 .equip-card:hover .quick-view-btn { transform: translateY(0); }
+/* Touch devices have no hover state, so reveal Quick View by default */
+@media (hover: none) {
+  .equip-hover-overlay {
+    opacity: 1;
+    background: rgba(28,42,30,0.32);
+    pointer-events: auto;
+  }
+  .quick-view-btn { transform: translateY(0); }
+}
 
 .detail-wrap { display: flex; gap: 32px; flex-wrap: wrap; }
 .detail-images { flex: 1 1 320px; }
