@@ -7,12 +7,21 @@
         <a href="{% url 'rentals:payment_create' %}" class="btn-kc">+ Record Payment</a>
     </div>
 
+    <form method="get" class="filter-bar">
+        <input type="text" name="q" placeholder="Search customer, equipment, or reference #..." value="{{ search_query }}" autocomplete="off">
+        {% if current_filter %}<input type="hidden" name="status" value="{{ current_filter }}">{% endif %}
+        {% if sort_key %}<input type="hidden" name="sort" value="{{ sort_key }}">{% endif %}
+        {% if sort_dir %}<input type="hidden" name="dir" value="{{ sort_dir }}">{% endif %}
+        <button type="submit" class="btn-kc-sm">Search</button>
+        {% if search_query %}<a href="?{% if current_filter %}status={{ current_filter }}&{% endif %}sort={{ sort_key }}&dir={{ sort_dir }}" class="btn-kc-sm outline">Clear</a>{% endif %}
+    </form>
+
     <div class="filter-buttons">
-        <a href="?sort={{ sort_key }}&dir={{ sort_dir }}" class="filter-btn {% if not current_filter %}active{% endif %}">All ({{ status_counts.total }})</a>
-        <a href="?status=pending&sort={{ sort_key }}&dir={{ sort_dir }}" class="filter-btn {% if current_filter == 'pending' %}active{% endif %}">Pending ({{ status_counts.pending }})</a>
-        <a href="?status=paid&sort={{ sort_key }}&dir={{ sort_dir }}" class="filter-btn {% if current_filter == 'paid' %}active{% endif %}">Paid ({{ status_counts.paid }})</a>
-        <a href="?status=refunded&sort={{ sort_key }}&dir={{ sort_dir }}" class="filter-btn {% if current_filter == 'refunded' %}active{% endif %}">Refunded ({{ status_counts.refunded }})</a>
-        <a href="?status=failed&sort={{ sort_key }}&dir={{ sort_dir }}" class="filter-btn {% if current_filter == 'failed' %}active{% endif %}">Failed ({{ status_counts.failed }})</a>
+        <a href="?sort={{ sort_key }}&dir={{ sort_dir }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="filter-btn {% if not current_filter %}active{% endif %}">All ({{ status_counts.total }})</a>
+        <a href="?status=pending&sort={{ sort_key }}&dir={{ sort_dir }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="filter-btn {% if current_filter == 'pending' %}active{% endif %}">Pending ({{ status_counts.pending }})</a>
+        <a href="?status=paid&sort={{ sort_key }}&dir={{ sort_dir }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="filter-btn {% if current_filter == 'paid' %}active{% endif %}">Paid ({{ status_counts.paid }})</a>
+        <a href="?status=refunded&sort={{ sort_key }}&dir={{ sort_dir }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="filter-btn {% if current_filter == 'refunded' %}active{% endif %}">Refunded ({{ status_counts.refunded }})</a>
+        <a href="?status=failed&sort={{ sort_key }}&dir={{ sort_dir }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="filter-btn {% if current_filter == 'failed' %}active{% endif %}">Failed ({{ status_counts.failed }})</a>
     </div>
 
     <div class="stat-grid">
@@ -25,11 +34,11 @@
     <table class="dash-table">
         <thead><tr>
             <th>Booking</th>
-            <th><a href="?{% if current_filter %}status={{ current_filter }}&{% endif %}sort=customer&dir={% if sort_key == 'customer' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}" class="sort-link {% if sort_key == 'customer' %}active{% endif %}">Customer{% if sort_key == 'customer' %}<span class="sort-arrow">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
-            <th><a href="?{% if current_filter %}status={{ current_filter }}&{% endif %}sort=amount&dir={% if sort_key == 'amount' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}" class="sort-link {% if sort_key == 'amount' %}active{% endif %}">Amount{% if sort_key == 'amount' %}<span class="sort-arrow">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
-            <th><a href="?{% if current_filter %}status={{ current_filter }}&{% endif %}sort=method&dir={% if sort_key == 'method' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}" class="sort-link {% if sort_key == 'method' %}active{% endif %}">Method{% if sort_key == 'method' %}<span class="sort-arrow">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+            <th><a href="?{% if current_filter %}status={{ current_filter }}&{% endif %}sort=customer&dir={% if sort_key == 'customer' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="sort-link {% if sort_key == 'customer' %}active{% endif %}">Customer{% if sort_key == 'customer' %}<span class="sort-arrow">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+            <th><a href="?{% if current_filter %}status={{ current_filter }}&{% endif %}sort=amount&dir={% if sort_key == 'amount' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="sort-link {% if sort_key == 'amount' %}active{% endif %}">Amount{% if sort_key == 'amount' %}<span class="sort-arrow">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+            <th><a href="?{% if current_filter %}status={{ current_filter }}&{% endif %}sort=method&dir={% if sort_key == 'method' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="sort-link {% if sort_key == 'method' %}active{% endif %}">Method{% if sort_key == 'method' %}<span class="sort-arrow">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
             <th>Status</th>
-            <th><a href="?{% if current_filter %}status={{ current_filter }}&{% endif %}sort=date&dir={% if sort_key == 'date' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}" class="sort-link {% if sort_key == 'date' %}active{% endif %}">Date{% if sort_key == 'date' %}<span class="sort-arrow">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+            <th><a href="?{% if current_filter %}status={{ current_filter }}&{% endif %}sort=date&dir={% if sort_key == 'date' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="sort-link {% if sort_key == 'date' %}active{% endif %}">Date{% if sort_key == 'date' %}<span class="sort-arrow">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
             <th>Reference #</th>
             <th>Actions</th>
         </tr></thead>
@@ -55,6 +64,7 @@
                 <td class="action-row">
                     <a href="{% url 'rentals:payment_update' p.pk %}" class="btn-kc-sm outline">Edit</a>
                     <a href="{% url 'rentals:payment_delete' p.pk %}" class="btn-kc-sm danger">Delete</a>
+                    <button type="button" class="btn-kc-sm outline" data-history-id="{{ p.pk }}">History</button>
                 </td>
             </tr>
             {% empty %}
@@ -62,5 +72,107 @@
             {% endfor %}
         </tbody>
     </table>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a href="?{{ base_query }}&page={{ page_obj.previous_page_number }}" class="page-link">‹ Prev</a>
+        {% endif %}
+        <span class="page-status">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+        <a href="?{{ base_query }}&page={{ page_obj.next_page_number }}" class="page-link">Next ›</a>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
+
+{{ logs_by_payment_json|json_script:"logs-by-payment-data" }}
+
+<div class="qv-modal-backdrop" id="history-modal-backdrop">
+  <div class="qv-modal avail-modal" role="dialog" aria-modal="true">
+    <button type="button" class="qv-close" id="history-modal-close" aria-label="Close">✕</button>
+    <div class="qv-modal-body avail-modal-body">
+      <h3>Payment Status History</h3>
+      <div class="history-timeline" id="history-timeline"></div>
+      <p class="avail-empty-note" id="history-empty" hidden>No status changes yet — still at its original status.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var dataEl = document.getElementById('logs-by-payment-data');
+  var logsByPayment = {};
+  if (dataEl) {
+    try { logsByPayment = JSON.parse(dataEl.textContent); } catch (e) { logsByPayment = {}; }
+  }
+
+  var backdrop = document.getElementById('history-modal-backdrop');
+  var timeline = document.getElementById('history-timeline');
+  var emptyNote = document.getElementById('history-empty');
+
+  function openHistory(id) {
+    var entries = logsByPayment[id] || [];
+    timeline.innerHTML = '';
+    if (entries.length === 0) {
+      emptyNote.hidden = false;
+    } else {
+      emptyNote.hidden = true;
+      entries.forEach(function (entry) {
+        var item = document.createElement('div');
+        item.className = 'history-item';
+
+        var head = document.createElement('div');
+        head.className = 'history-item-head';
+
+        var transition = document.createElement('span');
+        transition.className = 'history-transition';
+        transition.textContent = entry.old_status + ' → ' + entry.new_status;
+
+        var tag = document.createElement('span');
+        tag.className = 'badge-kc ' + (entry.is_automatic ? 'blue' : 'gray');
+        tag.textContent = entry.is_automatic ? 'Automatic' : 'Manual';
+
+        head.appendChild(transition);
+        head.appendChild(tag);
+        item.appendChild(head);
+
+        var meta = document.createElement('div');
+        meta.className = 'history-meta';
+        meta.textContent = entry.changed_by + ' · ' + entry.created_at;
+        item.appendChild(meta);
+
+        if (entry.note) {
+          var note = document.createElement('p');
+          note.className = 'history-note';
+          note.textContent = '"' + entry.note + '"';
+          item.appendChild(note);
+        }
+
+        timeline.appendChild(item);
+      });
+    }
+    backdrop.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeHistory() {
+    backdrop.classList.remove('is-open');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('[data-history-id]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      openHistory(btn.getAttribute('data-history-id'));
+    });
+  });
+  document.getElementById('history-modal-close').addEventListener('click', closeHistory);
+  backdrop.addEventListener('click', function (e) {
+    if (e.target === backdrop) closeHistory();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeHistory();
+  });
+})();
+</script>
 {% endblock %}

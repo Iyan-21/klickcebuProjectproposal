@@ -57,6 +57,7 @@
                     <a href="{% url 'rentals:booking_update' b.pk %}" class="btn-kc-sm outline">Edit</a>
                     {% endif %}
                     <a href="{% url 'rentals:booking_delete' b.pk %}" class="btn-kc-sm danger">Cancel</a>
+                    <button type="button" class="btn-kc-sm outline" data-history-id="{{ b.pk }}">History</button>
                 </td>
             </tr>
             {% empty %}
@@ -77,4 +78,94 @@
     </div>
     {% endif %}
 </div>
+
+{{ logs_by_booking_json|json_script:"logs-by-booking-data" }}
+
+<div class="qv-modal-backdrop" id="history-modal-backdrop">
+  <div class="qv-modal avail-modal" role="dialog" aria-modal="true">
+    <button type="button" class="qv-close" id="history-modal-close" aria-label="Close">✕</button>
+    <div class="qv-modal-body avail-modal-body">
+      <h3>Status History</h3>
+      <div class="history-timeline" id="history-timeline"></div>
+      <p class="avail-empty-note" id="history-empty" hidden>No status changes yet — still at its original status.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var dataEl = document.getElementById('logs-by-booking-data');
+  var logsByBooking = {};
+  if (dataEl) {
+    try { logsByBooking = JSON.parse(dataEl.textContent); } catch (e) { logsByBooking = {}; }
+  }
+
+  var backdrop = document.getElementById('history-modal-backdrop');
+  var timeline = document.getElementById('history-timeline');
+  var emptyNote = document.getElementById('history-empty');
+
+  function openHistory(id) {
+    var entries = logsByBooking[id] || [];
+    timeline.innerHTML = '';
+    if (entries.length === 0) {
+      emptyNote.hidden = false;
+    } else {
+      emptyNote.hidden = true;
+      entries.forEach(function (entry) {
+        var item = document.createElement('div');
+        item.className = 'history-item';
+
+        var head = document.createElement('div');
+        head.className = 'history-item-head';
+
+        var transition = document.createElement('span');
+        transition.className = 'history-transition';
+        transition.textContent = entry.old_status + ' → ' + entry.new_status;
+
+        var tag = document.createElement('span');
+        tag.className = 'badge-kc ' + (entry.is_automatic ? 'blue' : 'gray');
+        tag.textContent = entry.is_automatic ? 'Automatic' : 'Manual';
+
+        head.appendChild(transition);
+        head.appendChild(tag);
+        item.appendChild(head);
+
+        var meta = document.createElement('div');
+        meta.className = 'history-meta';
+        meta.textContent = entry.changed_by + ' · ' + entry.created_at;
+        item.appendChild(meta);
+
+        if (entry.note) {
+          var note = document.createElement('p');
+          note.className = 'history-note';
+          note.textContent = '"' + entry.note + '"';
+          item.appendChild(note);
+        }
+
+        timeline.appendChild(item);
+      });
+    }
+    backdrop.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeHistory() {
+    backdrop.classList.remove('is-open');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('[data-history-id]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      openHistory(btn.getAttribute('data-history-id'));
+    });
+  });
+  document.getElementById('history-modal-close').addEventListener('click', closeHistory);
+  backdrop.addEventListener('click', function (e) {
+    if (e.target === backdrop) closeHistory();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeHistory();
+  });
+})();
+</script>
 {% endblock %}

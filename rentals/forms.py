@@ -4,6 +4,7 @@ from decimal import Decimal
 from django import forms
 from django.db.models import Q
 from .models import Category, Equipment, EquipmentImage, Booking, Payment
+from .status_rules import is_irregular_booking_change, is_irregular_payment_change
 
 # Booking statuses that actually block the equipment's calendar
 ACTIVE_BOOKING_STATUSES = ['pending', 'confirmed', 'ongoing']
@@ -70,6 +71,12 @@ class BookingForm(forms.ModelForm):
         required=False,
         help_text="Optional extras for this booking.",
     )
+    reason = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={**WIDGET_ATTRS, 'rows': 2}),
+        label="Reason for status change",
+        help_text="Only required if the status change skips a step or reverses it (e.g. Confirmed → Pending)."
+    )
 
     class Meta:
         model = Booking
@@ -125,6 +132,21 @@ class BookingForm(forms.ModelForm):
                     "Please pick different dates or a different item."
                 )
 
+        # A status change is only "irregular" (skips a step, reverses, or moves
+        # to/from Cancelled) when we're editing an existing booking — self.instance
+        # still holds the pre-edit status here, since ModelForm applies cleaned_data
+        # to the instance later, in _post_clean().
+        new_status = cleaned.get('status')
+        if self.instance.pk and new_status:
+            old_status = self.instance.status
+            if new_status != old_status and is_irregular_booking_change(old_status, new_status):
+                if not cleaned.get('reason', '').strip():
+                    self.add_error(
+                        'reason',
+                        "This status change skips a step or reverses the booking's status — "
+                        "please explain why."
+                    )
+
         return cleaned
 
     def save(self, commit=True):
@@ -169,6 +191,13 @@ class BookingSelectWidget(forms.Select):
 
 
 class PaymentForm(forms.ModelForm):
+    reason = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={**WIDGET_ATTRS, 'rows': 2}),
+        label="Reason for status change",
+        help_text="Only required if the status change skips a step or reverses it (e.g. Paid → Pending, or a Refund)."
+    )
+
     class Meta:
         model = Payment
         fields = ['booking', 'amount', 'payment_method', 'payment_status', 'payment_date', 'reference_no']
@@ -189,3 +218,19 @@ class PaymentForm(forms.ModelForm):
         if self.instance and self.instance.pk and self.instance.booking_id:
             qs = Booking.objects.filter(Q(payment__isnull=True) | Q(pk=self.instance.booking_id))
         self.fields['booking'].queryset = qs.select_related('equipment', 'customer').order_by('-created_at')
+
+    def clean(self):
+        cleaned = super().clean()
+        # Same rule as BookingForm — self.instance.payment_status is still the
+        # pre-edit value here, since ModelForm applies cleaned_data later in _post_clean().
+        new_status = cleaned.get('payment_status')
+        if self.instance.pk and new_status:
+            old_status = self.instance.payment_status
+            if new_status != old_status and is_irregular_payment_change(old_status, new_status):
+                if not cleaned.get('reason', '').strip():
+                    self.add_error(
+                        'reason',
+                        "This status change skips a step or reverses the payment's status — "
+                        "please explain why."
+                    )
+        return cleaned

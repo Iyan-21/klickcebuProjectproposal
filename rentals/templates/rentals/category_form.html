@@ -6,19 +6,49 @@
     <div class="form-card">
         <form method="post">
             {% csrf_token %}
-            {% if form.non_field_errors %}<div class="alert-kc error">{{ form.non_field_errors }}</div>{% endif %}
+            {% if form.non_field_errors %}
+            <div class="alert-kc error">{{ form.non_field_errors }}</div>
+            {% endif %}
             {% for field in form %}
+            {% if field.name != 'reason' %}
             <div class="form-group-kc">
                 <label>{{ field.label }}</label>
                 {{ field }}
                 {% if field.errors %}<div class="alert-kc error">{{ field.errors }}</div>{% endif %}
             </div>
+            {% endif %}
             {% endfor %}
+            {% if form.instance.pk %}
+            <div class="form-group-kc reason-field">
+                <label>{{ form.reason.label }}</label>
+                {{ form.reason }}
+                <p class="field-hint">{{ form.reason.help_text }}</p>
+                {% if form.reason.errors %}<div class="alert-kc error">{{ form.reason.errors }}</div>{% endif %}
+            </div>
+            {% endif %}
             <div class="form-actions">
                 <button type="submit" class="btn-kc">Save</button>
-                <a href="{% url 'rentals:category_list' %}" class="btn-kc-outline">Cancel</a>
+                <a href="{% url 'rentals:booking_list' %}" class="btn-kc-outline">Cancel</a>
             </div>
         </form>
+
+        {% if status_logs %}
+        <div class="status-history-panel">
+            <h4>Status History</h4>
+            <div class="history-timeline">
+                {% for log in status_logs %}
+                <div class="history-item">
+                    <div class="history-item-head">
+                        <span class="history-transition">{{ log.get_old_status_display|default:"—" }} → {{ log.get_new_status_display }}</span>
+                        {% if log.is_automatic %}<span class="badge-kc blue">Automatic</span>{% else %}<span class="badge-kc gray">Manual</span>{% endif %}
+                    </div>
+                    <div class="history-meta">{% if log.changed_by %}{{ log.changed_by.get_full_name|default:log.changed_by.email }}{% else %}System{% endif %} · {{ log.created_at|date:"M d, Y g:i A" }}</div>
+                    {% if log.note %}<p class="history-note">"{{ log.note }}"</p>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

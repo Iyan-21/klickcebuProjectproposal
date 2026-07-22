@@ -8,7 +8,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Sum
 from django.utils import timezone
 
-from .models import Category, Equipment, EquipmentImage, Booking, Payment
+from .models import Category, Equipment, EquipmentImage, Booking, Payment, BookingStatusLog, PaymentStatusLog
 from .forms import (
     CategoryForm, EquipmentForm, EquipmentImageForm,
     BookingForm, PaymentForm
@@ -185,12 +185,32 @@ def equipment_image_delete(request, pk, image_id):
 
 # ---------- BOOKING ----------
 
+def maybe_auto_confirm_booking(payment, changed_by):
+    """If a payment is marked as Paid, automatically advance its booking one
+    step forward (Pending -> Confirmed) and log it as a system-triggered change.
+    Guarded by booking.status == 'pending', so this only fires once — later
+    saves where the payment stays Paid won't re-trigger it."""
+    booking = payment.booking
+    if payment.payment_status == 'paid' and booking.status == 'pending':
+        old_status = booking.status
+        booking.status = 'confirmed'
+        booking.save(update_fields=['status'])
+        BookingStatusLog.objects.create(
+            booking=booking,
+            old_status=old_status,
+            new_status='confirmed',
+            note='Automatically confirmed after the payment was marked as Paid.',
+            is_automatic=True,
+            changed_by=changed_by,
+        )
+
+
 @login_required
 def booking_list(request):
     if is_admin(request.user):
-        bookings = Booking.objects.select_related('customer', 'equipment').all()
+        bookings = Booking.objects.select_related('customer', 'equipment').prefetch_related('status_logs__changed_by').all()
     else:
-        bookings = Booking.objects.select_related('equipment').filter(customer=request.user)
+        bookings = Booking.objects.select_related('equipment').prefetch_related('status_logs__changed_by').filter(customer=request.user)
 
     # Get filter from query parameter
     status_filter = request.GET.get('status', '')
@@ -219,12 +239,29 @@ def booking_list(request):
     paginator = Paginator(bookings, 15)
     page_obj = paginator.get_page(request.GET.get('page'))
 
+    # Preload each visible booking's status history for the "History" modal —
+    # same instant-open-no-reload pattern as the availability calendar.
+    logs_by_booking = {}
+    for b in page_obj.object_list:
+        logs_by_booking[b.pk] = [
+            {
+                'old_status': log.get_old_status_display() or '—',
+                'new_status': log.get_new_status_display(),
+                'note': log.note,
+                'is_automatic': log.is_automatic,
+                'changed_by': ((log.changed_by.get_full_name() or log.changed_by.email) if log.changed_by else 'System'),
+                'created_at': log.created_at.strftime('%b %d, %Y %I:%M %p'),
+            }
+            for log in b.status_logs.all()
+        ]
+
     return render(request, 'rentals/booking_list.html', {
         'bookings': page_obj,
         'page_obj': page_obj,
         'base_query': base_query,
         'status_counts': status_counts,
-        'current_filter': status_filter
+        'current_filter': status_filter,
+        'logs_by_booking_json': logs_by_booking,
     })
 
 
@@ -272,15 +309,29 @@ def booking_create(request):
 @user_passes_test(is_admin, login_url='dashboard:home')
 def booking_update(request, pk):
     booking = get_object_or_404(Booking, pk=pk)
+    old_status = booking.status
     if request.method == 'POST':
         form = BookingForm(request.POST, instance=booking)
         if form.is_valid():
-            form.save()
+            saved = form.save()
+            if saved.status != old_status:
+                BookingStatusLog.objects.create(
+                    booking=saved,
+                    old_status=old_status,
+                    new_status=saved.status,
+                    note=form.cleaned_data.get('reason', '').strip(),
+                    is_automatic=False,
+                    changed_by=request.user,
+                )
             messages.success(request, 'Booking updated.')
             return redirect('rentals:booking_list')
     else:
         form = BookingForm(instance=booking)
-    return render(request, 'rentals/booking_form.html', {'form': form, 'title': 'Edit Booking'})
+    return render(request, 'rentals/booking_form.html', {
+        'form': form,
+        'title': 'Edit Booking',
+        'status_logs': booking.status_logs.select_related('changed_by').all(),
+    })
 
 
 @login_required
@@ -358,6 +409,20 @@ def payment_list(request):
     paginator = Paginator(payments, 15)
     page_obj = paginator.get_page(request.GET.get('page'))
 
+    logs_by_payment = {}
+    for p in page_obj.object_list:
+        logs_by_payment[p.pk] = [
+            {
+                'old_status': log.get_old_status_display() or '—',
+                'new_status': log.get_new_status_display(),
+                'note': log.note,
+                'is_automatic': log.is_automatic,
+                'changed_by': ((log.changed_by.get_full_name() or log.changed_by.email) if log.changed_by else 'System'),
+                'created_at': log.created_at.strftime('%b %d, %Y %I:%M %p'),
+            }
+            for log in p.status_logs.select_related('changed_by').all()
+        ]
+
     return render(request, 'rentals/payment_list.html', {
         'payments': page_obj,
         'page_obj': page_obj,
@@ -368,6 +433,7 @@ def payment_list(request):
         'search_query': search_query,
         'sort_key': sort_key,
         'sort_dir': sort_dir,
+        'logs_by_payment_json': logs_by_payment,
     })
 
 
@@ -377,7 +443,8 @@ def payment_create(request):
     if request.method == 'POST':
         form = PaymentForm(request.POST)
         if form.is_valid():
-            form.save()
+            saved = form.save()
+            maybe_auto_confirm_booking(saved, request.user)
             messages.success(request, 'Payment recorded.')
             return redirect('rentals:payment_list')
     else:
@@ -389,15 +456,30 @@ def payment_create(request):
 @user_passes_test(is_admin, login_url='dashboard:home')
 def payment_update(request, pk):
     payment = get_object_or_404(Payment, pk=pk)
+    old_status = payment.payment_status
     if request.method == 'POST':
         form = PaymentForm(request.POST, instance=payment)
         if form.is_valid():
-            form.save()
+            saved = form.save()
+            if saved.payment_status != old_status:
+                PaymentStatusLog.objects.create(
+                    payment=saved,
+                    old_status=old_status,
+                    new_status=saved.payment_status,
+                    note=form.cleaned_data.get('reason', '').strip(),
+                    is_automatic=False,
+                    changed_by=request.user,
+                )
+            maybe_auto_confirm_booking(saved, request.user)
             messages.success(request, 'Payment updated.')
             return redirect('rentals:payment_list')
     else:
         form = PaymentForm(instance=payment)
-    return render(request, 'rentals/payment_form.html', {'form': form, 'title': 'Edit Payment'})
+    return render(request, 'rentals/payment_form.html', {
+        'form': form,
+        'title': 'Edit Payment',
+        'status_logs': payment.status_logs.select_related('changed_by').all(),
+    })
 
 
 @login_required

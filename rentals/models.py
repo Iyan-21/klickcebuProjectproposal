@@ -165,3 +165,49 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Payment for Booking #{self.booking_id}"
+
+
+class BookingStatusLog(models.Model):
+    """Audit trail entry for a booking status change. `note` is required (enforced
+    in the form) whenever the change skips a step, reverses, or moves to/from a
+    side-branch status like Cancelled — see rentals/status_rules.py."""
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='status_logs')
+    old_status = models.CharField(max_length=20, choices=Booking.STATUS_CHOICES, blank=True)
+    new_status = models.CharField(max_length=20, choices=Booking.STATUS_CHOICES)
+    note = models.TextField(blank=True)
+    is_automatic = models.BooleanField(
+        default=False,
+        help_text="True when the system made this change on its own (e.g. auto-confirming a booking after payment was marked Paid)."
+    )
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='booking_status_changes'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Booking #{self.booking_id}: {self.old_status} → {self.new_status}"
+
+
+class PaymentStatusLog(models.Model):
+    """Audit trail entry for a payment status change. Same note-required rule as
+    BookingStatusLog, evaluated against PAYMENT_SEQUENCE."""
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name='status_logs')
+    old_status = models.CharField(max_length=20, choices=Payment.STATUS_CHOICES, blank=True)
+    new_status = models.CharField(max_length=20, choices=Payment.STATUS_CHOICES)
+    note = models.TextField(blank=True)
+    is_automatic = models.BooleanField(default=False)
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='payment_status_changes'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Payment #{self.payment_id}: {self.old_status} → {self.new_status}"
