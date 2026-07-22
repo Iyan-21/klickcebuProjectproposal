@@ -53,7 +53,9 @@
                     {% else %}<span class="badge-kc yellow">{{ b.get_status_display }}</span>{% endif %}
                 </td>
                 <td class="action-row">
+                    {% if request.user.role == 'admin' or request.user.is_superuser %}
                     <a href="{% url 'rentals:booking_update' b.pk %}" class="btn-kc-sm outline">Edit</a>
+                    {% endif %}
                     <a href="{% url 'rentals:booking_delete' b.pk %}" class="btn-kc-sm danger">Cancel</a>
                 </td>
             </tr>
@@ -62,5 +64,17 @@
             {% endfor %}
         </tbody>
     </table>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a href="?{{ base_query }}&page={{ page_obj.previous_page_number }}" class="page-link">‹ Prev</a>
+        {% endif %}
+        <span class="page-status">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+        <a href="?{{ base_query }}&page={{ page_obj.next_page_number }}" class="page-link">Next ›</a>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

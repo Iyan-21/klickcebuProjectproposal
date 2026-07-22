@@ -4,13 +4,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.db.models import Q, Sum
 from django.utils import timezone
 
 from .models import Category, Equipment, EquipmentImage, Booking, Payment
 from .forms import (
     CategoryForm, EquipmentForm, EquipmentImageForm,
-    BookingForm, BookingStatusForm, PaymentForm
+    BookingForm, PaymentForm
 )
 
 
@@ -211,8 +212,17 @@ def booking_list(request):
             request.user) else Booking.objects.filter(customer=request.user, status='cancelled').count(),
     }
 
+    querydict = request.GET.copy()
+    querydict.pop('page', None)
+    base_query = querydict.urlencode()
+
+    paginator = Paginator(bookings, 15)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'rentals/booking_list.html', {
-        'bookings': bookings,
+        'bookings': page_obj,
+        'page_obj': page_obj,
+        'base_query': base_query,
         'status_counts': status_counts,
         'current_filter': status_filter
     })
@@ -259,21 +269,17 @@ def booking_create(request):
 
 
 @login_required
+@user_passes_test(is_admin, login_url='dashboard:home')
 def booking_update(request, pk):
     booking = get_object_or_404(Booking, pk=pk)
-    if not is_admin(request.user) and booking.customer_id != request.user.id:
-        messages.error(request, "You can't edit this booking.")
-        return redirect('rentals:booking_list')
-
-    FormClass = BookingForm if is_admin(request.user) else BookingStatusForm
     if request.method == 'POST':
-        form = FormClass(request.POST, instance=booking)
+        form = BookingForm(request.POST, instance=booking)
         if form.is_valid():
             form.save()
             messages.success(request, 'Booking updated.')
             return redirect('rentals:booking_list')
     else:
-        form = FormClass(instance=booking)
+        form = BookingForm(instance=booking)
     return render(request, 'rentals/booking_form.html', {'form': form, 'title': 'Edit Booking'})
 
 
@@ -318,6 +324,16 @@ def payment_list(request):
     if status_filter in ['pending', 'paid', 'refunded', 'failed']:
         payments = payments.filter(payment_status=status_filter)
 
+    search_query = request.GET.get('q', '').strip()
+    if search_query:
+        payments = payments.filter(
+            Q(booking__customer__first_name__icontains=search_query) |
+            Q(booking__customer__last_name__icontains=search_query) |
+            Q(booking__customer__email__icontains=search_query) |
+            Q(reference_no__icontains=search_query) |
+            Q(booking__equipment__name__icontains=search_query)
+        )
+
     # Sorting: ?sort=amount|date|customer|method&dir=asc|desc (defaults to newest first)
     sort_fields = {
         'amount': 'amount',
@@ -334,11 +350,22 @@ def payment_list(request):
         sort_key, sort_dir = 'date', 'desc'
         payments = payments.order_by('-created_at')
 
+    # Pagination — preserve status/search/sort in a reusable querystring for page links.
+    querydict = request.GET.copy()
+    querydict.pop('page', None)
+    base_query = querydict.urlencode()
+
+    paginator = Paginator(payments, 15)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'rentals/payment_list.html', {
-        'payments': payments,
+        'payments': page_obj,
+        'page_obj': page_obj,
+        'base_query': base_query,
         'totals': totals,
         'status_counts': status_counts,
         'current_filter': status_filter,
+        'search_query': search_query,
         'sort_key': sort_key,
         'sort_dir': sort_dir,
     })
