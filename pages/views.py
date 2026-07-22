@@ -1,8 +1,10 @@
 import calendar
+import json
 from collections import defaultdict
 from datetime import date, timedelta
 
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import TemplateView
 
@@ -76,19 +78,40 @@ def availability_view(request):
             booked_by_day[cur].add(b.equipment_id)
             cur += timedelta(days=1)
 
+    # Build a lightweight {name, detail_url} list for every equipment item once,
+    # then slice it per day using the equipment ids already grouped in booked_by_day.
+    # This lets the calendar modal open instantly client-side instead of reloading
+    # the page on every date click.
+    equipment_lookup = {
+        item.id: {'name': item.name, 'detail_url': reverse('rentals:equipment_detail', args=[item.pk])}
+        for item in equipment_qs
+    }
+    all_equipment_ids = set(equipment_lookup.keys())
+
     cal = calendar.Calendar(firstweekday=6)  # Sunday-first, to match the calendar convention
     weeks, week = [], []
+    day_details = {}
     for d in cal.itermonthdates(year, month):
+        booked_ids = booked_by_day.get(d, set())
         if total_equipment == 0:
             status = 'none'
         else:
-            booked_count = len(booked_by_day.get(d, ()))
+            booked_count = len(booked_ids)
             if booked_count == 0:
                 status = 'available'
             elif booked_count >= total_equipment:
                 status = 'full'
             else:
                 status = 'partial'
+
+        if d.month == month:
+            available_ids = all_equipment_ids - booked_ids
+            day_details[d.isoformat()] = {
+                'label': d.strftime('%A, %B %-d, %Y'),
+                'available': [equipment_lookup[i] for i in available_ids],
+                'booked': [equipment_lookup[i] for i in booked_ids],
+            }
+
         week.append({
             'date': d,
             'in_month': d.month == month,
@@ -99,26 +122,17 @@ def availability_view(request):
             weeks.append(week)
             week = []
 
+    # Supports deep links like ?date=2026-07-22 by telling the template which
+    # date (if any) to auto-open the modal for on page load.
     selected_date = None
-    available_items = booked_items = None
     sel = request.GET.get('date')
     if sel:
         try:
-            selected_date = date.fromisoformat(sel)
+            candidate = date.fromisoformat(sel)
+            if month_start <= candidate <= month_end:
+                selected_date = candidate
         except ValueError:
             selected_date = None
-        if selected_date:
-            if month_start <= selected_date <= month_end:
-                booked_ids = booked_by_day.get(selected_date, set())
-            else:
-                # Selected date falls outside the displayed month (e.g. deep link) — compute fresh.
-                day_bookings = Booking.objects.filter(
-                    status__in=['pending', 'confirmed', 'ongoing'],
-                    start_date__lte=selected_date, end_date__gte=selected_date,
-                ).values_list('equipment_id', flat=True)
-                booked_ids = set(day_bookings)
-            available_items = equipment_qs.exclude(id__in=booked_ids)
-            booked_items = equipment_qs.filter(id__in=booked_ids)
 
     context = {
         'weeks': weeks,
@@ -128,9 +142,8 @@ def availability_view(request):
         'current_month': month, 'current_year': year,
         'today': today,
         'selected_date': selected_date,
-        'available_items': available_items,
-        'booked_items': booked_items,
         'total_equipment': total_equipment,
         'weekday_labels': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+        'day_details_json': json.dumps(day_details),
     }
     return render(request, 'pages/availability.html', context)

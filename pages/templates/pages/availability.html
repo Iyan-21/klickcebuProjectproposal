@@ -30,11 +30,17 @@
       {% for week in weeks %}
       <div class="avail-grid">
         {% for day in week %}
-        <a href="?year={{ current_year }}&month={{ current_month }}&date={{ day.date|date:'Y-m-d' }}"
-           class="avail-day status-{{ day.status }}{% if not day.in_month %} other-month{% endif %}{% if day.is_today %} is-today{% endif %}{% if selected_date == day.date %} selected{% endif %}">
+        {% if day.in_month %}
+        <button type="button" data-date="{{ day.date|date:'Y-m-d' }}"
+           class="avail-day status-{{ day.status }}{% if day.is_today %} is-today{% endif %}{% if selected_date == day.date %} selected{% endif %}">
           <span class="avail-day-num">{{ day.date.day }}</span>
           {% if day.status != 'none' %}<span class="avail-day-dot status-{{ day.status }}"></span>{% endif %}
+        </button>
+        {% else %}
+        <a href="?year={{ current_year }}&month={{ current_month }}" class="avail-day other-month" tabindex="-1">
+          <span class="avail-day-num">{{ day.date.day }}</span>
         </a>
+        {% endif %}
         {% endfor %}
       </div>
       {% endfor %}
@@ -42,40 +48,114 @@
 
     {% if total_equipment == 0 %}
     <div class="empty-state">No equipment listings yet — check back soon.</div>
-    {% elif selected_date %}
-    <div class="avail-detail">
-      <h3>{{ selected_date|date:"l, F j, Y" }}</h3>
-      <div class="avail-detail-cols">
-        <div>
-          <h4>Available ({{ available_items|length }})</h4>
-          {% if available_items %}
-          <div class="avail-badge-list">
-            {% for item in available_items %}
-              <a href="{% url 'rentals:equipment_detail' item.pk %}" class="badge-kc green">{{ item.name }}</a>
-            {% endfor %}
-          </div>
-          {% else %}
-          <p class="avail-empty-note">Nothing free this day.</p>
-          {% endif %}
-        </div>
-        <div>
-          <h4>Booked ({{ booked_items|length }})</h4>
-          {% if booked_items %}
-          <div class="avail-badge-list">
-            {% for item in booked_items %}
-              <span class="badge-kc red">{{ item.name }}</span>
-            {% endfor %}
-          </div>
-          {% else %}
-          <p class="avail-empty-note">Nothing booked this day.</p>
-          {% endif %}
-        </div>
-      </div>
-      <a href="{% url 'rentals:equipment_list' %}" class="btn-kc avail-cta">Browse Equipment</a>
-    </div>
     {% else %}
     <p class="avail-hint">Tap a date above to see exactly what's free.</p>
     {% endif %}
   </div>
 </section>
+
+{{ day_details_json|json_script:"day-details-data" }}
+
+<div class="qv-modal-backdrop" id="avail-modal-backdrop">
+  <div class="qv-modal avail-modal" role="dialog" aria-modal="true">
+    <button type="button" class="qv-close" id="avail-modal-close" aria-label="Close">✕</button>
+    <div class="qv-modal-body avail-modal-body">
+      <h3 id="avail-modal-date"></h3>
+      <div class="avail-detail-cols">
+        <div>
+          <h4>Available (<span id="avail-modal-avail-count"></span>)</h4>
+          <div class="avail-badge-list" id="avail-modal-available"></div>
+          <p class="avail-empty-note" id="avail-modal-available-empty" hidden>Nothing free this day.</p>
+        </div>
+        <div>
+          <h4>Booked (<span id="avail-modal-booked-count"></span>)</h4>
+          <div class="avail-badge-list" id="avail-modal-booked"></div>
+          <p class="avail-empty-note" id="avail-modal-booked-empty" hidden>Nothing booked this day.</p>
+        </div>
+      </div>
+      <a href="{% url 'rentals:equipment_list' %}" class="btn-kc avail-cta">Browse Equipment</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var dataEl = document.getElementById('day-details-data');
+  var dayDetails = {};
+  if (dataEl) {
+    try { dayDetails = JSON.parse(dataEl.textContent); } catch (e) { dayDetails = {}; }
+  }
+
+  var backdrop = document.getElementById('avail-modal-backdrop');
+  var elDate = document.getElementById('avail-modal-date');
+  var elAvailable = document.getElementById('avail-modal-available');
+  var elBooked = document.getElementById('avail-modal-booked');
+  var elAvailableEmpty = document.getElementById('avail-modal-available-empty');
+  var elBookedEmpty = document.getElementById('avail-modal-booked-empty');
+  var elAvailCount = document.getElementById('avail-modal-avail-count');
+  var elBookedCount = document.getElementById('avail-modal-booked-count');
+
+  function renderBadges(container, items, emptyEl, cls) {
+    container.innerHTML = '';
+    if (!items || items.length === 0) {
+      emptyEl.hidden = false;
+      return;
+    }
+    emptyEl.hidden = true;
+    items.forEach(function (item) {
+      var el;
+      if (item.detail_url && cls === 'green') {
+        el = document.createElement('a');
+        el.href = item.detail_url;
+      } else {
+        el = document.createElement('span');
+      }
+      el.className = 'badge-kc ' + cls;
+      el.textContent = item.name;
+      container.appendChild(el);
+    });
+  }
+
+  function openModal(dateStr) {
+    var d = dayDetails[dateStr];
+    if (!d) return;
+    elDate.textContent = d.label;
+    elAvailCount.textContent = d.available.length;
+    elBookedCount.textContent = d.booked.length;
+    renderBadges(elAvailable, d.available, elAvailableEmpty, 'green');
+    renderBadges(elBooked, d.booked, elBookedEmpty, 'red');
+    backdrop.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+
+    document.querySelectorAll('.avail-day.selected').forEach(function (el) {
+      el.classList.remove('selected');
+    });
+    var activeCell = document.querySelector('.avail-day[data-date="' + dateStr + '"]');
+    if (activeCell) activeCell.classList.add('selected');
+  }
+
+  function closeModal() {
+    backdrop.classList.remove('is-open');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.avail-day[data-date]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      openModal(btn.getAttribute('data-date'));
+    });
+  });
+
+  document.getElementById('avail-modal-close').addEventListener('click', closeModal);
+  backdrop.addEventListener('click', function (e) {
+    if (e.target === backdrop) closeModal();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  {% if selected_date %}
+  openModal('{{ selected_date|date:"Y-m-d" }}');
+  {% endif %}
+})();
+</script>
 {% endblock %}
