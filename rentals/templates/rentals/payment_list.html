@@ -7,6 +7,14 @@
         <a href="{% url 'rentals:payment_create' %}" class="btn-kc">+ Record Payment</a>
     </div>
 
+    <div class="filter-buttons">
+        <a href="?sort={{ sort_key }}&dir={{ sort_dir }}" class="filter-btn {% if not current_filter %}active{% endif %}">All ({{ status_counts.total }})</a>
+        <a href="?status=pending&sort={{ sort_key }}&dir={{ sort_dir }}" class="filter-btn {% if current_filter == 'pending' %}active{% endif %}">Pending ({{ status_counts.pending }})</a>
+        <a href="?status=paid&sort={{ sort_key }}&dir={{ sort_dir }}" class="filter-btn {% if current_filter == 'paid' %}active{% endif %}">Paid ({{ status_counts.paid }})</a>
+        <a href="?status=refunded&sort={{ sort_key }}&dir={{ sort_dir }}" class="filter-btn {% if current_filter == 'refunded' %}active{% endif %}">Refunded ({{ status_counts.refunded }})</a>
+        <a href="?status=failed&sort={{ sort_key }}&dir={{ sort_dir }}" class="filter-btn {% if current_filter == 'failed' %}active{% endif %}">Failed ({{ status_counts.failed }})</a>
+    </div>
+
     <div class="stat-grid">
         <div class="stat-card"><div class="label">Total Collected</div><div class="value">₱{{ totals.collected }}</div></div>
         <div class="stat-card"><div class="label">Pending</div><div class="value">₱{{ totals.pending }}</div></div>
@@ -15,7 +23,16 @@
     </div>
 
     <table class="dash-table">
-        <thead><tr><th>Booking</th><th>Customer</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th><th>Reference #</th><th>Actions</th></tr></thead>
+        <thead><tr>
+            <th>Booking</th>
+            <th><a href="?{% if current_filter %}status={{ current_filter }}&{% endif %}sort=customer&dir={% if sort_key == 'customer' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}" class="sort-link {% if sort_key == 'customer' %}active{% endif %}">Customer{% if sort_key == 'customer' %}<span class="sort-arrow">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+            <th><a href="?{% if current_filter %}status={{ current_filter }}&{% endif %}sort=amount&dir={% if sort_key == 'amount' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}" class="sort-link {% if sort_key == 'amount' %}active{% endif %}">Amount{% if sort_key == 'amount' %}<span class="sort-arrow">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+            <th><a href="?{% if current_filter %}status={{ current_filter }}&{% endif %}sort=method&dir={% if sort_key == 'method' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}" class="sort-link {% if sort_key == 'method' %}active{% endif %}">Method{% if sort_key == 'method' %}<span class="sort-arrow">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+            <th>Status</th>
+            <th><a href="?{% if current_filter %}status={{ current_filter }}&{% endif %}sort=date&dir={% if sort_key == 'date' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}" class="sort-link {% if sort_key == 'date' %}active{% endif %}">Date{% if sort_key == 'date' %}<span class="sort-arrow">{% if sort_dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+            <th>Reference #</th>
+            <th>Actions</th>
+        </tr></thead>
         <tbody>
             {% for p in payments %}
             <tr>
@@ -41,7 +58,7 @@
                 </td>
             </tr>
             {% empty %}
-            <tr><td colspan="8" class="empty-state">No payments recorded yet.</td></tr>
+            <tr><td colspan="8" class="empty-state">No payments match this filter.</td></tr>
             {% endfor %}
         </tbody>
     </table>

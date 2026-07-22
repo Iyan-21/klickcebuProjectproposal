@@ -224,6 +224,11 @@ a { transition: color .15s var(--ease); }
 .dash-table tbody tr { transition: background .15s var(--ease); }
 .dash-table tbody tr:hover { background: rgba(255,255,255,0.5); }
 
+.sort-link { color: var(--muted); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; transition: color .15s var(--ease); }
+.sort-link:hover { color: var(--forest); }
+.sort-link.active { color: var(--forest); font-weight: 700; }
+.sort-arrow { font-size: 9px; }
+
 .dash-subtitle { font-size: 18px; margin-top: var(--space-5); margin-bottom: var(--space-3); }
 .dash-columns { display: grid; grid-template-columns: 1.3fr 1fr; gap: var(--space-5); align-items: start; }
 .table-footlink { margin-top: 10px; font-size: 13px; }

@@ -295,17 +295,53 @@ def booking_delete(request, pk):
 @login_required
 @user_passes_test(is_admin, login_url='dashboard:home')
 def payment_list(request):
-    payments = Payment.objects.select_related('booking', 'booking__customer', 'booking__equipment').all()
+    all_payments = Payment.objects.select_related('booking', 'booking__customer', 'booking__equipment').all()
     today = timezone.localdate()
     totals = {
-        'collected': payments.filter(payment_status='paid').aggregate(s=Sum('amount'))['s'] or 0,
-        'pending': payments.filter(payment_status='pending').aggregate(s=Sum('amount'))['s'] or 0,
-        'this_month': payments.filter(
+        'collected': all_payments.filter(payment_status='paid').aggregate(s=Sum('amount'))['s'] or 0,
+        'pending': all_payments.filter(payment_status='pending').aggregate(s=Sum('amount'))['s'] or 0,
+        'this_month': all_payments.filter(
             payment_status='paid', payment_date__year=today.year, payment_date__month=today.month
         ).aggregate(s=Sum('amount'))['s'] or 0,
-        'count': payments.count(),
+        'count': all_payments.count(),
     }
-    return render(request, 'rentals/payment_list.html', {'payments': payments, 'totals': totals})
+    status_counts = {
+        'total': all_payments.count(),
+        'pending': all_payments.filter(payment_status='pending').count(),
+        'paid': all_payments.filter(payment_status='paid').count(),
+        'refunded': all_payments.filter(payment_status='refunded').count(),
+        'failed': all_payments.filter(payment_status='failed').count(),
+    }
+
+    payments = all_payments
+    status_filter = request.GET.get('status', '')
+    if status_filter in ['pending', 'paid', 'refunded', 'failed']:
+        payments = payments.filter(payment_status=status_filter)
+
+    # Sorting: ?sort=amount|date|customer|method&dir=asc|desc (defaults to newest first)
+    sort_fields = {
+        'amount': 'amount',
+        'date': 'payment_date',
+        'customer': 'booking__customer__first_name',
+        'method': 'payment_method',
+    }
+    sort_key = request.GET.get('sort', '')
+    sort_dir = request.GET.get('dir', 'desc')
+    if sort_key in sort_fields:
+        field = sort_fields[sort_key]
+        payments = payments.order_by(field if sort_dir == 'asc' else f'-{field}')
+    else:
+        sort_key, sort_dir = 'date', 'desc'
+        payments = payments.order_by('-created_at')
+
+    return render(request, 'rentals/payment_list.html', {
+        'payments': payments,
+        'totals': totals,
+        'status_counts': status_counts,
+        'current_filter': status_filter,
+        'sort_key': sort_key,
+        'sort_dir': sort_dir,
+    })
 
 
 @login_required
