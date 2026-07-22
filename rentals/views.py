@@ -147,7 +147,8 @@ def equipment_update(request, pk):
             return redirect('rentals:equipment_detail', pk=equipment.pk)
     else:
         form = EquipmentForm(instance=equipment)
-    return render(request, 'rentals/equipment_form.html', {'form': form, 'title': 'Edit Equipment', 'equipment': equipment})
+    return render(request, 'rentals/equipment_form.html',
+                  {'form': form, 'title': 'Edit Equipment', 'equipment': equipment})
 
 
 @login_required
@@ -190,14 +191,31 @@ def booking_list(request):
     else:
         bookings = Booking.objects.select_related('equipment').filter(customer=request.user)
 
+    # Get filter from query parameter
+    status_filter = request.GET.get('status', '')
+    if status_filter in ['pending', 'confirmed', 'ongoing', 'completed', 'cancelled']:
+        bookings = bookings.filter(status=status_filter)
+
     status_counts = {
-        'total': bookings.count(),
-        'pending': bookings.filter(status='pending').count(),
-        'active': bookings.filter(status__in=['confirmed', 'ongoing']).count(),
-        'completed': bookings.filter(status='completed').count(),
-        'cancelled': bookings.filter(status='cancelled').count(),
+        'total': Booking.objects.all().count() if is_admin(request.user) else Booking.objects.filter(
+            customer=request.user).count(),
+        'pending': Booking.objects.filter(status='pending').count() if is_admin(
+            request.user) else Booking.objects.filter(customer=request.user, status='pending').count(),
+        'confirmed': Booking.objects.filter(status='confirmed').count() if is_admin(
+            request.user) else Booking.objects.filter(customer=request.user, status='confirmed').count(),
+        'ongoing': Booking.objects.filter(status='ongoing').count() if is_admin(
+            request.user) else Booking.objects.filter(customer=request.user, status='ongoing').count(),
+        'completed': Booking.objects.filter(status='completed').count() if is_admin(
+            request.user) else Booking.objects.filter(customer=request.user, status='completed').count(),
+        'cancelled': Booking.objects.filter(status='cancelled').count() if is_admin(
+            request.user) else Booking.objects.filter(customer=request.user, status='cancelled').count(),
     }
-    return render(request, 'rentals/booking_list.html', {'bookings': bookings, 'status_counts': status_counts})
+
+    return render(request, 'rentals/booking_list.html', {
+        'bookings': bookings,
+        'status_counts': status_counts,
+        'current_filter': status_filter
+    })
 
 
 @login_required

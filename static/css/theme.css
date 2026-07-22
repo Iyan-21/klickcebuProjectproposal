@@ -678,6 +678,23 @@ a { transition: color .15s var(--ease); }
 .qv-condition { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
 .qv-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 
+/* --- Filter buttons --- */
+.filter-buttons {
+  display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap;
+  padding: 12px 0; border-bottom: 1px solid var(--glass-border);
+}
+.filter-btn {
+  display: inline-block; padding: 8px 16px; border-radius: 20px;
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 500;
+  transition: all .2s var(--ease); cursor: pointer;
+}
+.filter-btn:hover { background: var(--bg-panel); border-color: var(--accent); color: var(--accent); }
+.filter-btn.active {
+  background: var(--accent); color: white; border-color: var(--accent);
+  box-shadow: 0 4px 12px rgba(184,135,58,0.3);
+}
+
 @media (max-width: 640px) {
   .qv-modal { flex-direction: column; max-height: 92vh; }
   .qv-modal-thumb { width: 100%; height: 200px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
