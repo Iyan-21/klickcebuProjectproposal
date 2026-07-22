@@ -1,5 +1,4 @@
 import calendar
-import json
 from collections import defaultdict
 from datetime import date, timedelta
 
@@ -144,6 +143,6 @@ def availability_view(request):
         'selected_date': selected_date,
         'total_equipment': total_equipment,
         'weekday_labels': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-        'day_details_json': json.dumps(day_details),
+        'day_details_json': day_details,
     }
     return render(request, 'pages/availability.html', context)
