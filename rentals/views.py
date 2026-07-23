@@ -205,6 +205,41 @@ def maybe_auto_confirm_booking(payment, changed_by):
         )
 
 
+def maybe_auto_record_payment(booking, changed_by):
+    """Mirror of maybe_auto_confirm_booking, in the other direction: if a
+    booking is marked Confirmed, automatically record its payment as Paid
+    (creating the payment record on the spot if one doesn't exist yet) with
+    today's date, and log it as a system-triggered change.
+
+    Guarded by payment.payment_status != 'paid', so this only fires once —
+    later saves where the booking stays Confirmed won't re-trigger it. This
+    calls Payment.save() directly rather than going through the payment_*
+    views, so it can't loop back into maybe_auto_confirm_booking above."""
+    if booking.status != 'confirmed':
+        return
+    payment, created = Payment.objects.get_or_create(
+        booking=booking,
+        defaults={
+            'amount': booking.down_payment_amount,
+            'payment_method': booking.payment_method,
+            'payment_status': 'pending',
+        }
+    )
+    if payment.payment_status != 'paid':
+        old_status = payment.payment_status
+        payment.payment_status = 'paid'
+        payment.payment_date = timezone.localdate()
+        payment.save(update_fields=['payment_status', 'payment_date'])
+        PaymentStatusLog.objects.create(
+            payment=payment,
+            old_status=old_status,
+            new_status='paid',
+            note='Automatically marked Paid after the booking was confirmed.',
+            is_automatic=True,
+            changed_by=changed_by,
+        )
+
+
 @login_required
 def booking_list(request):
     if is_admin(request.user):
@@ -279,6 +314,8 @@ def booking_create(request):
                 booking.status = 'pending'
             booking.save()
             form.save_m2m()
+            if admin:
+                maybe_auto_record_payment(booking, request.user)
             messages.success(request, 'Booking created.')
             return redirect('rentals:booking_list')
     else:
@@ -323,6 +360,7 @@ def booking_update(request, pk):
                     is_automatic=False,
                     changed_by=request.user,
                 )
+            maybe_auto_record_payment(saved, request.user)
             messages.success(request, 'Booking updated.')
             return redirect('rentals:booking_list')
     else:
